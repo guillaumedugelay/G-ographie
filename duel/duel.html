@@ -1,0 +1,270 @@
+<title>Duel des pays</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&display=swap">
+<style>
+/* Mise en page : une carte marine, un duel de deux cartes face à face, scores de chaque joueur en tête */
+:root{
+  --bg:#e6edf0; --panel:#f6f9fa; --ink:#10263a; --mute:#5b7183; --line:#c4d1d9;
+  --p1:#1d4ed8; --p2:#e0590d; --ok:#15803d; --ko:#b91c1c; --grat:rgba(16,38,58,.07);
+  --display:"Bricolage Grotesque",system-ui,sans-serif; --body:"Figtree",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1a27; --panel:#132636; --ink:#e8f0f5; --mute:#8ba2b3; --line:#27425a;
+  --p1:#6c9bff; --p2:#ff9a5c; --ok:#4ade80; --ko:#f87171; --grat:rgba(232,240,245,.06); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1a27; --panel:#132636; --ink:#e8f0f5; --mute:#8ba2b3; --line:#27425a;
+  --p1:#6c9bff; --p2:#ff9a5c; --ok:#4ade80; --ko:#f87171; --grat:rgba(232,240,245,.06); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;
+  background-image:linear-gradient(var(--grat) 1px,transparent 1px),linear-gradient(90deg,var(--grat) 1px,transparent 1px);
+  background-size:48px 48px;padding-inline:16px;padding-block:20px;min-height:100vh}
+main{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.8rem,6vw,2.6rem);margin:0;line-height:1.05;text-wrap:balance}
+h2{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;text-wrap:balance}
+p{margin:0;line-height:1.5}
+.mute{color:var(--mute)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px;display:flex;flex-direction:column;gap:14px}
+label{font-weight:600;font-size:.9rem}
+input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:6px;padding:12px;width:100%}
+button{font:inherit;font-weight:600;cursor:pointer;border-radius:6px;border:1.5px solid var(--ink);padding:12px 20px;background:var(--ink);color:var(--bg)}
+button.alt{background:transparent;color:var(--ink)}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,input:focus-visible{outline:3px solid var(--p1);outline-offset:2px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.score{display:flex;gap:12px;align-items:stretch}
+.sc{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 14px;border-top:5px solid}
+.sc.a{border-top-color:var(--p1)} .sc.b{border-top-color:var(--p2)}
+.sc .n{font-size:.85rem;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sc .v{font-family:var(--display);font-weight:800;font-size:2rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.mid{display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:var(--display);font-weight:800;min-width:64px;text-align:center;font-size:.85rem;color:var(--mute)}
+.mid b{font-size:1.4rem;color:var(--ink);font-variant-numeric:tabular-nums}
+.duel{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card{position:relative;background:var(--panel);color:var(--ink);border:2px solid var(--line);border-radius:6px;padding:26px 10px 18px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}
+button.card:hover:not(:disabled){border-color:var(--ink)}
+button.card:disabled{opacity:1}
+.card.sel{border-color:var(--p1);box-shadow:0 0 0 3px var(--p1) inset}
+.card.good{border-color:var(--ok)} .card.bad{opacity:.85}
+.flag{font-size:clamp(3.2rem,16vw,5rem);line-height:1}
+.name{font-family:var(--display);font-weight:800;font-size:1.25rem;text-align:center;text-wrap:balance}
+.area{font-variant-numeric:tabular-nums;color:var(--mute);min-height:1.4em}
+.card.good .area{color:var(--ok);font-weight:600}
+.tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;min-height:26px}
+.tag{font-size:.78rem;font-weight:600;padding:3px 9px;border-radius:99px;color:#fff;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag.a{background:var(--p1)} .tag.b{background:var(--p2)}
+:root[data-theme="dark"] .tag{color:#0c1a27}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tag{color:#0c1a27}}
+.verdict{display:flex;gap:10px;flex-wrap:wrap}
+.vd{flex:1;min-width:140px;border:1.5px solid var(--line);border-radius:6px;padding:10px 12px;background:var(--panel);font-weight:600}
+.vd.ok{border-color:var(--ok);color:var(--ok)} .vd.ko{border-color:var(--ko);color:var(--ko)}
+.link{font-family:ui-monospace,monospace;font-size:.85rem;background:var(--bg);border:1px dashed var(--line);padding:10px;border-radius:6px;word-break:break-all}
+.big{font-family:var(--display);font-weight:800;font-size:clamp(2.4rem,10vw,3.6rem);text-align:center;font-variant-numeric:tabular-nums}
+@media (max-width:420px){.card{padding-inline:6px}.name{font-size:1.05rem}}
+</style>
+<main id="app"><h1>Duel des pays</h1><p class="mute">Connexion…</p></main>
+<script>
+const DATA=[
+["RU","Russie",17098246],["CA","Canada",9984670],["CN","Chine",9596961],["US","États-Unis",9833517],
+["BR","Brésil",8515767],["AU","Australie",7692024],["IN","Inde",3287263],["AR","Argentine",2780400],
+["KZ","Kazakhstan",2724900],["DZ","Algérie",2381741],["CD","RD Congo",2344858],["SA","Arabie saoudite",2149690],
+["MX","Mexique",1964375],["ID","Indonésie",1904569],["SD","Soudan",1861484],["LY","Libye",1759540],
+["IR","Iran",1648195],["MN","Mongolie",1564116],["PE","Pérou",1285216],["TD","Tchad",1284000],
+["NE","Niger",1267000],["AO","Angola",1246700],["ML","Mali",1240192],["ZA","Afrique du Sud",1221037],
+["CO","Colombie",1141748],["ET","Éthiopie",1104300],["BO","Bolivie",1098581],["MR","Mauritanie",1030700],
+["EG","Égypte",1002450],["TZ","Tanzanie",945087],["NG","Nigeria",923768],["VE","Venezuela",916445],
+["PK","Pakistan",881913],["NA","Namibie",825615],["MZ","Mozambique",801590],["TR","Turquie",783562],
+["CL","Chili",756102],["ZM","Zambie",752612],["MM","Myanmar",676578],["AF","Afghanistan",652230],
+["SO","Somalie",637657],["CF","Centrafrique",622984],["UA","Ukraine",603550],["MG","Madagascar",587041],
+["BW","Botswana",581730],["KE","Kenya",580367],["FR","France",551695],["YE","Yémen",527968],
+["TH","Thaïlande",513120],["ES","Espagne",505990],["TM","Turkménistan",488100],["CM","Cameroun",475440],
+["PG","Papouasie-Nouvelle-Guinée",462840],["SE","Suède",450295],["UZ","Ouzbékistan",447400],["MA","Maroc",446550],
+["IQ","Irak",438317],["PY","Paraguay",406752],["ZW","Zimbabwe",390757],["JP","Japon",377975],
+["DE","Allemagne",357022],["CG","Congo",342000],["FI","Finlande",338145],["VN","Vietnam",331212],
+["MY","Malaisie",330803],["NO","Norvège",323802],["CI","Côte d'Ivoire",322463],["PL","Pologne",312696],
+["OM","Oman",309500],["IT","Italie",301340],["PH","Philippines",300000],["EC","Équateur",283561],
+["BF","Burkina Faso",272967],["NZ","Nouvelle-Zélande",268838],["GA","Gabon",267668],["GN","Guinée",245857],
+["GB","Royaume-Uni",243610],["UG","Ouganda",241038],["GH","Ghana",238533],["RO","Roumanie",238397],
+["LA","Laos",236800],["GY","Guyana",214969],["BY","Biélorussie",207600],["KG","Kirghizistan",199951],
+["SN","Sénégal",196722],["SY","Syrie",185180],["KH","Cambodge",181035],["UY","Uruguay",176215],
+["SR","Suriname",163820],["TN","Tunisie",163610],["BD","Bangladesh",147570],["NP","Népal",147181],
+["TJ","Tadjikistan",143100],["GR","Grèce",131957],["NI","Nicaragua",130373],["KP","Corée du Nord",120538],
+["MW","Malawi",118484],["ER","Érythrée",117600],["BJ","Bénin",114763],["HN","Honduras",112492],
+["LR","Libéria",111369],["BG","Bulgarie",110879],["CU","Cuba",109884],["GT","Guatemala",108889],
+["IS","Islande",103000],["KR","Corée du Sud",100210],["HU","Hongrie",93028],["PT","Portugal",92090],
+["JO","Jordanie",89342],["RS","Serbie",88361],["AZ","Azerbaïdjan",86600],["AT","Autriche",83871],
+["AE","Émirats arabes unis",83600],["CZ","Tchéquie",78867],["PA","Panama",75417],["SL","Sierra Leone",71740],
+["IE","Irlande",70273],["GE","Géorgie",69700],["LK","Sri Lanka",65610],["LT","Lituanie",65300],
+["LV","Lettonie",64589],["TG","Togo",56785],["HR","Croatie",56594],["BA","Bosnie-Herzégovine",51209],
+["CR","Costa Rica",51100],["SK","Slovaquie",49035],["DO","République dominicaine",48671],["EE","Estonie",45228],
+["DK","Danemark",43094],["NL","Pays-Bas",41850],["CH","Suisse",41285],["BT","Bhoutan",38394],
+["TW","Taïwan",36193],["GW","Guinée-Bissau",36125],["MD","Moldavie",33846],["BE","Belgique",30528],
+["LS","Lesotho",30355],["AM","Arménie",29743],["AL","Albanie",28748],["SV","Salvador",21041],
+["SI","Slovénie",20273],["FJ","Fidji",18272],["KW","Koweït",17818],["SZ","Eswatini",17364],
+["TL","Timor oriental",14874],["QA","Qatar",11586],["JM","Jamaïque",10991],["LB","Liban",10452],
+["CY","Chypre",9251],["LU","Luxembourg",2586],["MU","Maurice",2040],["MT","Malte",316],
+["LI","Liechtenstein",160],["SM","Saint-Marin",61],["MC","Monaco",2]
+].map(([code,name,area])=>({name,area,
+  flag:[...code].map(c=>String.fromCodePoint(127397+c.charCodeAt(0))).join("")}));
+const ROUNDS=10;
+const fmt=n=>n.toLocaleString("fr-FR",{maximumFractionDigits:2})+" km²";
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const app=document.getElementById("app");
+let db=null,uid=null,game=null,players={},ready=false;
+let name="";try{name=localStorage.getItem("duel-name")||""}catch(e){}
+let selected=null,selRound=-1,busy=false;
+
+function makeRounds(){
+  const used=new Set(),out=[];
+  const pick=()=>{let i;do{i=Math.floor(Math.random()*DATA.length)}while(used.has(i));used.add(i);return i};
+  for(let k=0;k<ROUNDS;k++){
+    const i=pick();let j,t=0;
+    do{j=pick();t++;const a=DATA[i].area,b=DATA[j].area;
+      if(Math.max(a,b)/Math.min(a,b)>=1.15||t>40)break;used.delete(j)}while(true);
+    out.push([i,j]);
+  }
+  return out;
+}
+const bigger=k=>{const[i,j]=game.rounds[k];return DATA[i].area>DATA[j].area?0:1};
+
+function gamePlayers(){
+  if(!game)return[];
+  return Object.entries(players).filter(([,p])=>p.gameId===game.gameId)
+    .sort((a,b)=>(a[1].joinedAt-b[1].joinedAt)||(a[0]<b[0]?-1:1)).slice(0,2);
+}
+function scoreOf(p,o){
+  let s=0;
+  for(let k=0;k<ROUNDS;k++){
+    const x=p.answers&&p.answers[k],y=o.answers&&o.answers[k];
+    if(x!==undefined&&y!==undefined&&x===bigger(k))s++;
+  }
+  return s;
+}
+
+async function startGame(){
+  if(busy||!name.trim())return;busy=true;
+  try{
+    await db.doc("games/state").set({gameId:Date.now().toString(36)+Math.random().toString(36).slice(2,6),host:uid,rounds:makeRounds()});
+    const g=await db.doc("games/state").get();
+    await db.doc("players/"+uid).set({gameId:g.data().gameId,name:name.trim(),answers:{},ack:0,joinedAt:Date.now()});
+  }catch(e){fail(e)}
+  busy=false;
+}
+async function joinGame(){
+  if(busy||!name.trim())return;busy=true;
+  try{await db.doc("players/"+uid).set({gameId:game.gameId,name:name.trim(),answers:{},ack:0,joinedAt:Date.now()})}
+  catch(e){fail(e)}
+  busy=false;
+}
+async function validate(r){
+  if(busy||selected===null)return;busy=true;
+  try{await db.doc("players/"+uid).update({answers:{[r]:selected}})}catch(e){fail(e)}
+  busy=false;
+}
+async function next(r){
+  if(busy)return;busy=true;
+  try{await db.doc("players/"+uid).update({ack:r+1})}catch(e){fail(e)}
+  busy=false;
+}
+function fail(e){
+  console.error(e);
+  const code=e&&e.code;
+  alert_(code==="invalid_argument"
+    ?"Tu n'as pas le droit d'écrire ici. Demande à l'organisateur de te donner l'accès « Contributeur » à cette page."
+    :"Une erreur est survenue ("+(code||"inconnue")+"). Réessaie.");
+}
+function alert_(msg){
+  const d=document.createElement("div");d.className="panel";d.setAttribute("role","alert");d.textContent=msg;
+  app.prepend(d);setTimeout(()=>d.remove(),6000);
+}
+
+function scoreBar(me,o,meScore,oScore,center){
+  return `<div class="score">
+    <div class="sc a"><div class="n">Toi</div><div class="v">${meScore}</div></div>
+    <div class="mid">${center}</div>
+    <div class="sc b"><div class="n">${esc(o.name)}</div><div class="v">${oScore}</div></div></div>`;
+}
+
+function render(){
+  if(!ready)return;
+  const gp=gamePlayers();
+  const me=gp.find(([id])=>id===uid);
+  let h="<h1>Duel des pays</h1>";
+  if(!me){
+    const joinable=game&&gp.length===1;
+    h+=`<div class="panel"><p>Deux joueurs, 10 manches. À chaque manche, vous choisissez chacun le pays le plus grand. Les choix restent cachés jusqu'à ce que vous ayez validé tous les deux. 1 point par bonne réponse.</p>
+      <label for="nm">Ton prénom</label><input type="text" id="nm" maxlength="20" value="${esc(name)}" autocomplete="off">`;
+    if(joinable)h+=`<p><b>${esc(gp[0][1].name)}</b> attend un adversaire.</p>
+      <div class="row"><button id="join">Rejoindre la partie de ${esc(gp[0][1].name)}</button><button class="alt" id="start">Commencer une nouvelle partie</button></div>`;
+    else h+=`<div class="row"><button id="start">Commencer</button></div>`;
+    h+="</div>";
+  }else if(gp.length<2){
+    h+=`<div class="panel"><h2>En attente d'un adversaire…</h2>
+      <p>Envoie le lien de cette page à ton adversaire. Il ou elle clique sur « Rejoindre », et la partie démarre toute seule.</p>
+      <div class="link">${esc(location.href.split("#")[0])}</div>
+      <div class="row"><button class="alt" id="start">Recommencer à zéro</button></div></div>`;
+  }else{
+    const oe=gp.find(([id])=>id!==uid),mp=me[1],op=oe[1];
+    const r=Math.min(mp.ack,op.ack);
+    const ms=scoreOf(mp,op),os=scoreOf(op,mp);
+    if(r>=ROUNDS){
+      const res=ms>os?"Tu as gagné 🏆":ms<os?esc(op.name)+" a gagné":"Égalité";
+      h+=scoreBar(mp,op,ms,os,"Fin")+`<div class="panel"><div class="big">${res}</div>
+        <p class="mute" style="text-align:center">${ms} point${ms>1?"s":""} contre ${os} sur ${ROUNDS} manches.</p>
+        <div class="row" style="justify-content:center"><button id="start">Rejouer</button></div></div>`;
+    }else{
+      if(selRound!==r){selected=null;selRound=r}
+      const[i,j]=game.rounds[r],c=[DATA[i],DATA[j]];
+      const mine=mp.answers[r],theirs=op.answers[r];
+      const reveal=mine!==undefined&&theirs!==undefined;
+      const best=bigger(r);
+      h+=scoreBar(mp,op,ms,os,`Manche<b>${r+1}/${ROUNDS}</b>`);
+      h+=`<div class="duel">`;
+      c.forEach((cn,k)=>{
+        let cls="card",tag="";
+        if(reveal){
+          cls+=k===best?" good":" bad";
+          const t=[];
+          if(mine===k)t.push('<span class="tag a">Toi</span>');
+          if(theirs===k)t.push(`<span class="tag b">${esc(op.name)}</span>`);
+          tag=t.join("");
+        }else if(mine!==undefined){if(mine===k)cls+=" sel"}
+        else if(selected===k)cls+=" sel";
+        const dis=mine!==undefined?" disabled":"";
+        h+=`<button class="${cls}" data-k="${k}"${dis}><div class="flag">${cn.flag}</div><div class="name">${esc(cn.name)}</div>
+          <div class="area">${reveal?fmt(cn.area):"?"}</div><div class="tags">${tag}</div></button>`;
+      });
+      h+="</div>";
+      if(reveal){
+        const v=(who,pick)=>`<div class="vd ${pick===best?"ok":"ko"}">${who} : ${pick===best?"+1 point":"0 point"}</div>`;
+        h+=`<div class="verdict">${v("Toi",mine)}${v(esc(op.name),theirs)}</div>`;
+        const acked=mp.ack>r;
+        h+=`<div class="row"><button id="next"${acked?" disabled":""}>${acked?"En attente de "+esc(op.name)+"…":(r===ROUNDS-1?"Voir le résultat":"Manche suivante")}</button></div>`;
+      }else if(mine!==undefined){
+        h+=`<p class="mute">Choix validé. En attente de ${esc(op.name)}…</p>`;
+      }else{
+        h+=`<div class="row"><button id="ok"${selected===null?" disabled":""}>Valider mon choix</button></div>`;
+      }
+    }
+  }
+  app.innerHTML=h;
+  const $=id=>document.getElementById(id);
+  const nm=$("nm");if(nm)nm.addEventListener("input",()=>{name=nm.value;try{localStorage.setItem("duel-name",name)}catch(e){}});
+  if($("start"))$("start").onclick=()=>{if(name.trim()||!$("nm"))startGame();else $("nm").focus()};
+  if($("join"))$("join").onclick=()=>{if(name.trim())joinGame();else $("nm").focus()};
+  if(me&&gp.length===2){
+    const r=Math.min(me[1].ack,gp.find(([id])=>id!==uid)[1].ack);
+    app.querySelectorAll(".duel button").forEach(b=>b.onclick=()=>{selected=+b.dataset.k;render()});
+    if($("ok"))$("ok").onclick=()=>validate(r);
+    if($("next"))$("next").onclick=()=>next(r);
+  }
+}
+
+(async function boot(){
+  const user=await claude.use("user"),d=await claude.use("db");
+  uid=user&&await user.id();
+  if(!d||!uid){app.innerHTML='<h1>Duel des pays</h1><div class="panel"><p>Connecte-toi à Claude pour jouer.</p></div>';return}
+  db=d;
+  db.doc("games/state").onSnapshot(s=>{game=s.exists?s.data():null;ready=true;render()},e=>console.error(e));
+  db.collection("players").onSnapshot(s=>{players={};s.docs.forEach(x=>players[x.id]=x.data());render()},e=>console.error(e));
+})();
+</script>
