@@ -137,7 +137,8 @@ function answer(i) {
   btns.forEach((b, j) => {
     b.disabled = true;
     b.querySelector(".area").textContent = fmt(pair[j].area);
-    b.classList.add(j === bigger ? "ok" : (j === i ? "ko" : ""));
+    if (j === bigger) b.classList.add("ok");
+    else if (j === i) b.classList.add("ko");
   });
   const next = $("next");
   next.classList.remove("hidden");
