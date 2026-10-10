@@ -141,20 +141,16 @@ function scoreOf(p,o){
   return s;
 }
 
-let peer=null,conn=null,isHost=!location.hash.slice(1);
-const hostId0=location.hash.slice(1);
+const SLOTS=20,PREFIX="geo-duel-pays-v1-";
+let peer=null,conn=null,isHost=false,closed=false,slot=0;
 const send=m=>{if(conn&&conn.open)conn.send(m)};
 function putPlayer(d){players[uid]=d;send({p:{id:uid,d}});render()}
+function newPlayer(n){return{gameId:game.gameId,name:n,answers:{},ack:0,joinedAt:Date.now()}}
 function startGame(){
-  if(!name.trim())return;
   if(!isHost){send({restart:true});return}
   game={gameId:Date.now().toString(36)+Math.random().toString(36).slice(2,6),host:uid,rounds:makeRounds()};
   players={};send({g:game});
-  putPlayer({gameId:game.gameId,name:name.trim(),answers:{},ack:0,joinedAt:Date.now()});
-}
-function joinGame(){
-  if(!name.trim()||!game)return;
-  putPlayer({gameId:game.gameId,name:name.trim(),answers:{},ack:0,joinedAt:Date.now()});
+  putPlayer(newPlayer("Joueur 1"));
 }
 function validate(r){
   if(selected===null)return;
@@ -162,7 +158,8 @@ function validate(r){
 }
 function next(r){putPlayer({...players[uid],ack:r+1})}
 function onMsg(m){
-  if(m.g)game=m.g;
+  if(m.full){tryNextSlot();return}
+  if(m.g){game=m.g;if(!isHost)putPlayer(newPlayer("Joueur 2"))}
   if(m.p)players[m.p.id]=m.p.d;
   if(m.restart&&isHost)startGame();
   render();
@@ -170,10 +167,43 @@ function onMsg(m){
 function wire(c){
   conn=c;
   c.on("data",onMsg);
-  c.on("close",()=>{conn=null;alert_("Ton adversaire s'est déconnecté.")});
-  const hello=()=>{ready=true;if(isHost){if(game)send({g:game});if(players[uid])send({p:{id:uid,d:players[uid]}})}render()};
+  c.on("close",()=>{conn=null;closed=true;render()});
+  const hello=()=>{if(isHost)startGame();render()};
   if(c.open)hello();else c.on("open",hello);
 }
+function fatal(t){ready=true;app.innerHTML='<h1>Duel des pays</h1><div class="panel"><p>'+t+'</p><div class="row"><button onclick="location.reload()">Réessayer</button></div></div>'}
+function tryNextSlot(){
+  if(peer){try{peer.destroy()}catch(e){}peer=null}
+  conn=null;isHost=false;slot++;
+  if(slot>SLOTS){fatal("Toutes les parties sont occupées. Réessaie dans un instant.");return}
+  const id=PREFIX+slot;
+  const p=new Peer(id);peer=p;
+  p.on("open",myId=>{
+    // Premier arrivé sur ce créneau : on est l'hôte et on attend un adversaire.
+    uid=myId;isHost=true;ready=true;render();
+    p.on("connection",c=>{
+      if(conn&&conn.open){c.on("open",()=>{c.send({full:true});setTimeout(()=>c.close(),300)});return}
+      wire(c);
+    });
+  });
+  p.on("error",e=>{
+    if(p!==peer)return;
+    if(e.type==="unavailable-id"){
+      // Créneau déjà occupé : on rejoint son hôte.
+      p.destroy();
+      const g=new Peer();peer=g;
+      g.on("open",myId=>{
+        uid=myId;
+        const c=g.connect(id,{reliable:true});
+        const t=setTimeout(()=>{if(!c.open&&peer===g)tryNextSlot()},6000);
+        c.on("open",()=>clearTimeout(t));
+        wire(c);ready=true;
+      });
+      g.on("error",()=>{if(peer===g)tryNextSlot()});
+    }else fatal("Connexion impossible ("+(e.type||"erreur")+").");
+  });
+}
+
 function fail(e){console.error(e);alert_("Une erreur est survenue. Réessaie.")}
 function alert_(msg){
   const d=document.createElement("div");d.className="panel";d.setAttribute("role","alert");d.textContent=msg;
@@ -192,20 +222,12 @@ function render(){
   const gp=gamePlayers();
   const me=gp.find(([id])=>id===uid);
   let h="<h1>Duel des pays</h1>";
-  if(!me){
-    const joinable=game&&gp.length===1;
-    if(!isHost&&!game){app.innerHTML="<h1>Duel des pays</h1><div class=\"panel\"><p>En attente que l'autre joueur lance la partie…</p></div>";return}
-    h+=`<div class="panel"><p>Deux joueurs, 10 manches. À chaque manche, vous choisissez chacun le pays le plus grand. Les choix restent cachés jusqu'à ce que vous ayez validé tous les deux. 1 point par bonne réponse.</p>
-      <label for="nm">Ton prénom</label><input type="text" id="nm" maxlength="20" value="${esc(name)}" autocomplete="off">`;
-    if(joinable)h+=`<p><b>${esc(gp[0][1].name)}</b> attend un adversaire.</p>
-      <div class="row"><button id="join">Rejoindre la partie de ${esc(gp[0][1].name)}</button>${isHost?'<button class="alt" id="start">Commencer une nouvelle partie</button>':""}</div>`;
-    else h+=`<div class="row"><button id="start">Commencer</button></div>`;
-    h+="</div>";
+  if(closed){
+    h+=`<div class="panel"><h2>Ton adversaire a quitté la partie</h2><div class="row"><button id="again">Nouvelle partie</button></div></div>`;
   }else if(gp.length<2){
-    h+=`<div class="panel"><h2>En attente d'un adversaire…</h2>
-      <p>Envoie le lien de cette page à ton adversaire. Il ou elle clique sur « Rejoindre », et la partie démarre toute seule.</p>
-      <div class="link">${esc(location.href.split("#")[0]+"#"+uid)}</div>
-      <div class="row"><button class="alt" id="start">Recommencer à zéro</button></div></div>`;
+    h+=`<div class="panel"><div class="big">${conn&&conn.open?2:1} / 2</div>
+      <h2 style="text-align:center">${isHost?"En attente d'un adversaire…":"Connexion à la partie…"}</h2>
+      <p class="mute" style="text-align:center">Dès qu'un deuxième joueur arrive sur cette page, la partie démarre toute seule. 10 manches : choisis le pays le plus grand, 1 point par bonne réponse.</p></div>`;
   }else{
     const oe=gp.find(([id])=>id!==uid),mp=me[1],op=oe[1];
     const r=Math.min(mp.ack,op.ack);
@@ -252,9 +274,8 @@ function render(){
   }
   app.innerHTML=h;
   const $=id=>document.getElementById(id);
-  const nm=$("nm");if(nm)nm.addEventListener("input",()=>{name=nm.value;try{localStorage.setItem("duel-name",name)}catch(e){}});
-  if($("start"))$("start").onclick=()=>{if(name.trim()||!$("nm"))startGame();else $("nm").focus()};
-  if($("join"))$("join").onclick=()=>{if(name.trim())joinGame();else $("nm").focus()};
+  if($("start"))$("start").onclick=startGame;
+  if($("again"))$("again").onclick=()=>location.reload();
   if(me&&gp.length===2){
     const r=Math.min(me[1].ack,gp.find(([id])=>id!==uid)[1].ack);
     app.querySelectorAll(".duel button").forEach(b=>b.onclick=()=>{selected=+b.dataset.k;render()});
@@ -264,16 +285,7 @@ function render(){
 }
 
 (function boot(){
-  const msg=t=>{app.innerHTML='<h1>Duel des pays</h1><div class="panel"><p>'+t+'</p></div>'};
-  if(!window.Peer){msg("Impossible de charger la connexion entre joueurs. Vérifie ta connexion internet.");return}
-  peer=new Peer();
-  peer.on("error",e=>msg("Connexion impossible ("+(e.type||"erreur")+"). "+(isHost?"Recharge la page.":"Vérifie le lien reçu, l'hôte doit garder sa page ouverte.")));
-  peer.on("open",id=>{
-    uid=id;
-    if(isHost){
-      ready=true;render();
-      peer.on("connection",c=>{if(conn&&conn.open){c.on("open",()=>c.close());return}wire(c)});
-    }else wire(peer.connect(hostId0,{reliable:true}));
-  });
+  if(!window.Peer){fatal("Impossible de charger la connexion entre joueurs. Vérifie ta connexion internet.");return}
+  tryNextSlot();
 })();
 </script>
