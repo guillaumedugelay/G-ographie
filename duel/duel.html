@@ -88,6 +88,7 @@ button.card:active:not(:disabled){transform:scale(.97)}
 .area{font-size:1.1rem}
 .tag{font-size:.95rem;padding:4px 12px}
 .vd{font-size:1.1rem;border-radius:14px;padding:14px}
+.q{text-align:center;font-size:1.5rem}
 .big{font-size:clamp(3.4rem,18vw,5.5rem)}
 @keyframes pulse{50%{opacity:.45}}
 .panel:has(h2) .big{animation:pulse 1.6s ease-in-out infinite}
@@ -96,6 +97,8 @@ button.card:active:not(:disabled){transform:scale(.97)}
 <main id="app"><h1>Duel des pays</h1><p class="mute">Connexion…</p></main>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
+const POP={"RU":144,"CA":40,"CN":1410,"US":335,"BR":212,"AU":26.5,"IN":1430,"AR":46,"KZ":20,"DZ":46,"CD":102,"SA":36,"MX":129,"ID":279,"SD":48,"LY":7,"IR":89,"MN":3.4,"PE":34,"TD":18,"NE":27,"AO":36,"ML":23,"ZA":60,"CO":52,"ET":126,"BO":12,"MR":4.9,"EG":112,"TZ":67,"NG":224,"VE":28,"PK":245,"NA":2.6,"MZ":34,"TR":85,"CL":19.6,"ZM":20,"MM":54,"AF":42,"SO":18,"CF":5.6,"UA":38,"MG":31,"BW":2.6,"KE":56,"FR":68,"YE":34,"TH":71,"ES":48,"TM":6.5,"CM":28,"PG":10,"SE":10.5,"UZ":36,"MA":37,"IQ":45,"PY":6.9,"ZW":16,"JP":124,"DE":84,"CG":6.1,"FI":5.6,"VN":100,"MY":34,"NO":5.5,"CI":29,"PL":37.7,"OM":4.6,"IT":59,"PH":117,"EC":18,"BF":23,"NZ":5.2,"GA":2.4,"GN":14,"GB":68,"UG":49,"GH":34,"RO":19,"LA":7.7,"GY":0.82,"BY":9.2,"KG":7,"SN":18,"SY":23,"KH":17,"UY":3.4,"SR":0.62,"TN":12,"BD":173,"NP":30,"TJ":10,"GR":10.4,"NI":7,"KP":26,"MW":21,"ER":3.7,"BJ":14,"HN":10.6,"LR":5.4,"BG":6.4,"CU":11,"GT":18,"IS":0.39,"KR":51.7,"HU":9.6,"PT":10.4,"JO":11.4,"RS":6.6,"AZ":10.4,"AT":9.1,"AE":10,"CZ":10.9,"PA":4.5,"SL":8.6,"IE":5.3,"GE":3.7,"LK":22,"LT":2.9,"LV":1.9,"TG":9,"HR":3.9,"BA":3.2,"CR":5.2,"SK":5.4,"DO":11.3,"EE":1.37,"DK":5.96,"NL":17.9,"CH":8.9,"BT":0.79,"TW":23.4,"GW":2.2,"MD":2.5,"BE":11.8,"LS":2.3,"AM":2.97,"AL":2.8,"SV":6.3,"SI":2.1,"FJ":0.93,"KW":4.3,"SZ":1.2,"TL":1.4,"QA":2.7,"JM":2.8,"LB":5.4,"CY":1.26,"LU":0.67,"MU":1.26,"MT":0.53,"LI":0.04,"SM":0.034,"MC":0.039};
+const COAST={"RU":37653,"CA":202080,"CN":14500,"US":19924,"BR":7491,"AU":25760,"IN":7000,"AR":4989,"DZ":998,"CD":37,"SA":2640,"MX":9330,"ID":54720,"SD":853,"LY":1770,"IR":2440,"PE":2414,"AO":1600,"ZA":2798,"CO":3208,"MR":754,"EG":2450,"TZ":1424,"NG":853,"VE":2800,"PK":1046,"NA":1572,"MZ":2470,"TR":7200,"CL":6435,"MM":1930,"SO":3025,"UA":2782,"MG":4828,"KE":536,"FR":4853,"YE":1906,"TH":3219,"ES":4964,"CM":402,"PG":5152,"SE":3218,"MA":1835,"IQ":58,"JP":29751,"DE":2389,"CG":169,"FI":1250,"VN":3444,"MY":4675,"NO":25148,"CI":515,"PL":440,"OM":2092,"IT":7600,"PH":36289,"EC":2237,"NZ":15134,"GA":885,"GN":320,"GB":12429,"GH":539,"RO":225,"GY":459,"SN":531,"SY":193,"KH":443,"UY":660,"SR":386,"TN":1148,"BD":580,"GR":13676,"NI":910,"KP":2495,"ER":2234,"BJ":121,"HN":820,"LR":579,"BG":354,"CU":3735,"GT":400,"IS":4970,"KR":2413,"PT":1793,"JO":26,"AE":1318,"PA":2490,"SL":402,"IE":1448,"GE":310,"LK":1340,"LT":90,"LV":498,"TG":56,"HR":5835,"BA":20,"CR":1290,"DO":1288,"EE":3794,"DK":7314,"NL":451,"TW":1566,"GW":350,"BE":67,"AL":362,"SV":307,"SI":47,"FJ":1129,"KW":499,"TL":706,"QA":563,"JM":1022,"LB":225,"CY":648,"MU":177,"MT":197,"MC":4};
 const DATA=[
 ["RU","Russie",17098246],["CA","Canada",9984670],["CN","Chine",9596961],["US","États-Unis",9833517],
 ["BR","Brésil",8515767],["AU","Australie",7692024],["IN","Inde",3287263],["AR","Argentine",2780400],
@@ -136,10 +139,18 @@ const DATA=[
 ["TL","Timor oriental",14874],["QA","Qatar",11586],["JM","Jamaïque",10991],["LB","Liban",10452],
 ["CY","Chypre",9251],["LU","Luxembourg",2586],["MU","Maurice",2040],["MT","Malte",316],
 ["LI","Liechtenstein",160],["SM","Saint-Marin",61],["MC","Monaco",2]
-].map(([code,name,area])=>({name,area,
+].map(([code,name,area])=>({name,area,pop:(POP[code]||0)*1e6,coast:COAST[code]||0,
   flag:[...code].map(c=>String.fromCodePoint(127397+c.charCodeAt(0))).join("")}));
-const ROUNDS=10;
-const fmt=n=>n.toLocaleString("fr-FR",{maximumFractionDigits:2})+" km²";
+DATA.forEach(c=>c.dens=c.pop/c.area);
+const ROUNDS=20;
+// Catégories qui alternent : superficie, population, longueur des côtes, densité
+const CATS=[
+  {key:"area",q:"Quel pays a la plus grande superficie ?",fmt:n=>n.toLocaleString("fr-FR",{maximumFractionDigits:0})+" km²"},
+  {key:"pop",q:"Quel pays a le plus d'habitants ?",fmt:n=>n>=1e6?(n/1e6).toLocaleString("fr-FR",{maximumFractionDigits:1})+" M hab.":Math.round(n/1e3).toLocaleString("fr-FR")+" 000 hab."},
+  {key:"coast",q:"Quel pays a les côtes les plus longues ?",fmt:n=>n.toLocaleString("fr-FR",{maximumFractionDigits:0})+" km"},
+  {key:"dens",q:"Quel pays est le plus densément peuplé ?",fmt:n=>n.toLocaleString("fr-FR",{maximumFractionDigits:n<10?1:0})+" hab./km²"}
+];
+const val=(c,cat)=>c[CATS[cat].key];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const app=document.getElementById("app");
 let db=null,uid=null,game=null,players={},ready=false;
@@ -148,16 +159,18 @@ let selected=null,selRound=-1,busy=false;
 
 function makeRounds(){
   const used=new Set(),out=[];
-  const pick=()=>{let i;do{i=Math.floor(Math.random()*DATA.length)}while(used.has(i));used.add(i);return i};
   for(let k=0;k<ROUNDS;k++){
+    const cat=k%CATS.length;
+    const pool=DATA.map((c,i)=>i).filter(i=>!used.has(i)&&val(DATA[i],cat)>0);
+    const pick=()=>pool[Math.floor(Math.random()*pool.length)];
     const i=pick();let j,t=0;
-    do{j=pick();t++;const a=DATA[i].area,b=DATA[j].area;
-      if(Math.max(a,b)/Math.min(a,b)>=1.15||t>40)break;used.delete(j)}while(true);
-    out.push([i,j]);
+    do{j=pick();t++;const a=val(DATA[i],cat),b=val(DATA[j],cat);
+      if(j!==i&&Math.max(a,b)/Math.min(a,b)>=1.15)break}while(t<200);
+    used.add(i);used.add(j);out.push([i,j,cat]);
   }
   return out;
 }
-const bigger=k=>{const[i,j]=game.rounds[k];return DATA[i].area>DATA[j].area?0:1};
+const bigger=k=>{const[i,j,cat]=game.rounds[k];return val(DATA[i],cat)>val(DATA[j],cat)?0:1};
 
 function gamePlayers(){
   if(!game)return[];
@@ -259,7 +272,7 @@ function render(){
   }else if(gp.length<2){
     h+=`<div class="panel"><div class="big">${conn&&conn.open?2:1} / 2</div>
       <h2 style="text-align:center">${isHost?"En attente d'un adversaire…":"Connexion à la partie…"}</h2>
-      <p class="mute" style="text-align:center">Dès qu'un deuxième joueur arrive sur cette page, la partie démarre toute seule. 10 manches : choisis le pays le plus grand, 1 point par bonne réponse.</p></div>`;
+      <p class="mute" style="text-align:center">Dès qu'un deuxième joueur arrive sur cette page, la partie démarre toute seule. 20 manches qui alternent superficie, population, côtes et densité. 1 point par bonne réponse.</p></div>`;
   }else{
     const oe=gp.find(([id])=>id!==uid),mp=me[1],op=oe[1];
     const r=Math.min(mp.ack,op.ack);
@@ -271,12 +284,12 @@ function render(){
         <div class="row" style="justify-content:center"><button id="start">Rejouer</button></div></div>`;
     }else{
       if(selRound!==r){selected=null;selRound=r}
-      const[i,j]=game.rounds[r],c=[DATA[i],DATA[j]];
+      const[i,j,cat]=game.rounds[r],c=[DATA[i],DATA[j]];
       const mine=mp.answers[r],theirs=op.answers[r];
       const reveal=mine!==undefined&&theirs!==undefined;
       const best=bigger(r);
       h+=scoreBar(mp,op,ms,os,`Manche<b>${r+1}/${ROUNDS}</b>`);
-      h+=`<div class="duel">`;
+      h+=`<h2 class="q">${CATS[cat].q}</h2><div class="duel">`;
       c.forEach((cn,k)=>{
         let cls="card",tag="";
         if(reveal){
@@ -289,7 +302,7 @@ function render(){
         else if(selected===k)cls+=" sel";
         const dis=mine!==undefined?" disabled":"";
         h+=`<button class="${cls}" data-k="${k}"${dis}><div class="flag">${cn.flag}</div><div class="name">${esc(cn.name)}</div>
-          <div class="area">${reveal?fmt(cn.area):"?"}</div><div class="tags">${tag}</div></button>`;
+          <div class="area">${reveal?CATS[cat].fmt(val(cn,cat)):"?"}</div><div class="tags">${tag}</div></button>`;
       });
       h+="</div>";
       if(reveal){
