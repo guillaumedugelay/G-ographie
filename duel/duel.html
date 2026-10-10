@@ -260,9 +260,13 @@ function render(){
 }
 
 (async function boot(){
-  const user=await claude.use("user"),d=await claude.use("db");
-  uid=user&&await user.id();
-  if(!d||!uid){app.innerHTML='<h1>Duel des pays</h1><div class="panel"><p>Connecte-toi à Claude pour jouer.</p></div>';return}
+  const msg=t=>{app.innerHTML='<h1>Duel des pays</h1><div class="panel"><p>'+t+'</p></div>'};
+  if(!window.claude||!claude.use){msg("Cette page doit être ouverte depuis claude.ai (lien Artifact), pas comme un fichier ou un site externe.");return}
+  let user=null,d=null;
+  try{user=await claude.use("user");d=await claude.use("db")}catch(e){console.error(e)}
+  let uid_=null;try{uid_=user&&await user.id()}catch(e){console.error(e)}
+  uid=uid_;
+  if(!d||!uid){msg("Connecte-toi à Claude (claude.ai) avec un compte invité sur cette page pour jouer. Si tu n'as pas été invité, demande à l'organisateur de t'inviter par e-mail.");return}
   db=d;
   db.doc("games/state").onSnapshot(s=>{game=s.exists?s.data():null;ready=true;render()},e=>console.error(e));
   db.collection("players").onSnapshot(s=>{players={};s.docs.forEach(x=>players[x.id]=x.data());render()},e=>console.error(e));
