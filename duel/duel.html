@@ -142,7 +142,7 @@ const DATA=[
 ].map(([code,name,area])=>({name,area,pop:(POP[code]||0)*1e6,coast:COAST[code]||0,
   flag:[...code].map(c=>String.fromCodePoint(127397+c.charCodeAt(0))).join("")}));
 DATA.forEach(c=>c.dens=c.pop/c.area);
-const ROUNDS=20;
+const ROUNDS=20,MAXRATIO=1.5;
 // Catégories qui alternent : superficie, population, longueur des côtes, densité
 const CATS=[
   {key:"area",q:"Quel pays a la plus grande superficie ?",fmt:n=>n.toLocaleString("fr-FR",{maximumFractionDigits:0})+" km²"},
@@ -162,9 +162,13 @@ function makeRounds(){
   for(let k=0;k<ROUNDS;k++){
     const cat=k%CATS.length;
     const pool=DATA.map((c,i)=>i).filter(i=>!used.has(i)&&val(DATA[i],cat)>0);
-    const pick=()=>pool[Math.floor(Math.random()*pool.length)];
-    const i=pick();let j;
-    do{j=pick()}while(j===i||val(DATA[i],cat)===val(DATA[j],cat));
+    // Écart maximal : le plus grand des deux vaut au plus 1,5 fois le plus petit
+    const close=(i,j)=>{const a=val(DATA[i],cat),b=val(DATA[j],cat);return a!==b&&Math.max(a,b)<=MAXRATIO*Math.min(a,b)};
+    let i,j;
+    for(const c of pool.sort(()=>Math.random()-.5)){
+      const m=pool.filter(x=>x!==c&&close(c,x));
+      if(m.length){i=c;j=m[Math.floor(Math.random()*m.length)];break}
+    }
     used.add(i);used.add(j);out.push([i,j,cat]);
   }
   return out;
