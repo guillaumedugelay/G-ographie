@@ -90,7 +90,7 @@ button.card:active:not(:disabled){transform:scale(.97)}
 .vd{font-size:1.1rem;border-radius:14px;padding:14px}
 .big{font-size:clamp(3.4rem,18vw,5.5rem)}
 @keyframes pulse{50%{opacity:.45}}
-.panel .big{animation:pulse 1.6s ease-in-out infinite}
+.panel:has(h2) .big{animation:pulse 1.6s ease-in-out infinite}
 @media (max-width:420px){.card{padding-inline:4px}.name{font-size:1.3rem}}
 </style>
 <main id="app"><h1>Duel des pays</h1><p class="mute">Connexion…</p></main>
