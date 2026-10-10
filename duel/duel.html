@@ -1,3 +1,7 @@
+<!doctype html>
+<html lang="fr"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Duel des pays</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&display=swap">
@@ -60,6 +64,34 @@ button.card:disabled{opacity:1}
 .link{font-family:ui-monospace,monospace;font-size:.85rem;background:var(--bg);border:1px dashed var(--line);padding:10px;border-radius:6px;word-break:break-all}
 .big{font-family:var(--display);font-weight:800;font-size:clamp(2.4rem,10vw,3.6rem);text-align:center;font-variant-numeric:tabular-nums}
 @media (max-width:420px){.card{padding-inline:6px}.name{font-size:1.05rem}}
+
+/* Version mobile : tout est plus grand, cartes plus marquées */
+body{font-size:18px;padding-inline:14px;background-image:radial-gradient(circle at 20% 0%,rgba(29,78,216,.14),transparent 45%),radial-gradient(circle at 90% 100%,rgba(224,89,13,.14),transparent 45%),linear-gradient(var(--grat) 1px,transparent 1px),linear-gradient(90deg,var(--grat) 1px,transparent 1px);background-size:auto,auto,48px 48px,48px 48px}
+main{gap:18px}
+h1{font-size:clamp(2.2rem,9vw,3rem);text-align:center}
+h2{font-size:1.8rem}
+.panel{border-radius:16px;padding:24px;box-shadow:0 6px 24px rgba(16,38,58,.12)}
+button{font-size:1.15rem;padding:16px 24px;border-radius:14px;min-height:56px}
+.row button{flex:1}
+.score{gap:10px}
+.sc{border-radius:14px;padding:12px 16px;border-top-width:6px}
+.sc .n{font-size:1rem}
+.sc .v{font-size:2.8rem}
+.mid{font-size:1rem;min-width:70px}.mid b{font-size:1.7rem}
+.duel{gap:12px}
+.card{border-radius:18px;padding:30px 8px 22px;gap:10px;box-shadow:0 4px 16px rgba(16,38,58,.12);transition:transform .12s,border-color .12s}
+button.card:active:not(:disabled){transform:scale(.97)}
+.card.sel{transform:scale(1.03);box-shadow:0 0 0 4px var(--p1) inset,0 8px 24px rgba(29,78,216,.3)}
+.card.good{box-shadow:0 0 0 4px var(--ok) inset,0 8px 24px rgba(21,128,61,.3)}
+.flag{font-size:clamp(4.5rem,24vw,7.5rem)}
+.name{font-size:1.5rem}
+.area{font-size:1.1rem}
+.tag{font-size:.95rem;padding:4px 12px}
+.vd{font-size:1.1rem;border-radius:14px;padding:14px}
+.big{font-size:clamp(3.4rem,18vw,5.5rem)}
+@keyframes pulse{50%{opacity:.45}}
+.panel .big{animation:pulse 1.6s ease-in-out infinite}
+@media (max-width:420px){.card{padding-inline:4px}.name{font-size:1.3rem}}
 </style>
 <main id="app"><h1>Duel des pays</h1><p class="mute">Connexion…</p></main>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -289,3 +321,4 @@ function render(){
   tryNextSlot();
 })();
 </script>
+</html>
