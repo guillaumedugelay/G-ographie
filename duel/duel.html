@@ -163,9 +163,8 @@ function makeRounds(){
     const cat=k%CATS.length;
     const pool=DATA.map((c,i)=>i).filter(i=>!used.has(i)&&val(DATA[i],cat)>0);
     const pick=()=>pool[Math.floor(Math.random()*pool.length)];
-    const i=pick();let j,t=0;
-    do{j=pick();t++;const a=val(DATA[i],cat),b=val(DATA[j],cat);
-      if(j!==i&&Math.max(a,b)/Math.min(a,b)>=1.15)break}while(t<200);
+    const i=pick();let j;
+    do{j=pick()}while(j===i||val(DATA[i],cat)===val(DATA[j],cat));
     used.add(i);used.add(j);out.push([i,j,cat]);
   }
   return out;
