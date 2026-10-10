@@ -62,6 +62,7 @@ button.card:disabled{opacity:1}
 @media (max-width:420px){.card{padding-inline:6px}.name{font-size:1.05rem}}
 </style>
 <main id="app"><h1>Duel des pays</h1><p class="mute">Connexion…</p></main>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 const DATA=[
 ["RU","Russie",17098246],["CA","Canada",9984670],["CN","Chine",9596961],["US","États-Unis",9833517],
@@ -140,38 +141,40 @@ function scoreOf(p,o){
   return s;
 }
 
-async function startGame(){
-  if(busy||!name.trim())return;busy=true;
-  try{
-    await db.doc("games/state").set({gameId:Date.now().toString(36)+Math.random().toString(36).slice(2,6),host:uid,rounds:makeRounds()});
-    const g=await db.doc("games/state").get();
-    await db.doc("players/"+uid).set({gameId:g.data().gameId,name:name.trim(),answers:{},ack:0,joinedAt:Date.now()});
-  }catch(e){fail(e)}
-  busy=false;
+let peer=null,conn=null,isHost=!location.hash.slice(1);
+const hostId0=location.hash.slice(1);
+const send=m=>{if(conn&&conn.open)conn.send(m)};
+function putPlayer(d){players[uid]=d;send({p:{id:uid,d}});render()}
+function startGame(){
+  if(!name.trim())return;
+  if(!isHost){send({restart:true});return}
+  game={gameId:Date.now().toString(36)+Math.random().toString(36).slice(2,6),host:uid,rounds:makeRounds()};
+  players={};send({g:game});
+  putPlayer({gameId:game.gameId,name:name.trim(),answers:{},ack:0,joinedAt:Date.now()});
 }
-async function joinGame(){
-  if(busy||!name.trim())return;busy=true;
-  try{await db.doc("players/"+uid).set({gameId:game.gameId,name:name.trim(),answers:{},ack:0,joinedAt:Date.now()})}
-  catch(e){fail(e)}
-  busy=false;
+function joinGame(){
+  if(!name.trim()||!game)return;
+  putPlayer({gameId:game.gameId,name:name.trim(),answers:{},ack:0,joinedAt:Date.now()});
 }
-async function validate(r){
-  if(busy||selected===null)return;busy=true;
-  try{await db.doc("players/"+uid).update({answers:{[r]:selected}})}catch(e){fail(e)}
-  busy=false;
+function validate(r){
+  if(selected===null)return;
+  const m=players[uid];putPlayer({...m,answers:{...m.answers,[r]:selected}});
 }
-async function next(r){
-  if(busy)return;busy=true;
-  try{await db.doc("players/"+uid).update({ack:r+1})}catch(e){fail(e)}
-  busy=false;
+function next(r){putPlayer({...players[uid],ack:r+1})}
+function onMsg(m){
+  if(m.g)game=m.g;
+  if(m.p)players[m.p.id]=m.p.d;
+  if(m.restart&&isHost)startGame();
+  render();
 }
-function fail(e){
-  console.error(e);
-  const code=e&&e.code;
-  alert_(code==="invalid_argument"
-    ?"Tu n'as pas le droit d'écrire ici. Demande à l'organisateur de te donner l'accès « Contributeur » à cette page."
-    :"Une erreur est survenue ("+(code||"inconnue")+"). Réessaie.");
+function wire(c){
+  conn=c;
+  c.on("data",onMsg);
+  c.on("close",()=>{conn=null;alert_("Ton adversaire s'est déconnecté.")});
+  const hello=()=>{ready=true;if(isHost){if(game)send({g:game});if(players[uid])send({p:{id:uid,d:players[uid]}})}render()};
+  if(c.open)hello();else c.on("open",hello);
 }
+function fail(e){console.error(e);alert_("Une erreur est survenue. Réessaie.")}
 function alert_(msg){
   const d=document.createElement("div");d.className="panel";d.setAttribute("role","alert");d.textContent=msg;
   app.prepend(d);setTimeout(()=>d.remove(),6000);
@@ -191,16 +194,17 @@ function render(){
   let h="<h1>Duel des pays</h1>";
   if(!me){
     const joinable=game&&gp.length===1;
+    if(!isHost&&!game){app.innerHTML="<h1>Duel des pays</h1><div class=\"panel\"><p>En attente que l'autre joueur lance la partie…</p></div>";return}
     h+=`<div class="panel"><p>Deux joueurs, 10 manches. À chaque manche, vous choisissez chacun le pays le plus grand. Les choix restent cachés jusqu'à ce que vous ayez validé tous les deux. 1 point par bonne réponse.</p>
       <label for="nm">Ton prénom</label><input type="text" id="nm" maxlength="20" value="${esc(name)}" autocomplete="off">`;
     if(joinable)h+=`<p><b>${esc(gp[0][1].name)}</b> attend un adversaire.</p>
-      <div class="row"><button id="join">Rejoindre la partie de ${esc(gp[0][1].name)}</button><button class="alt" id="start">Commencer une nouvelle partie</button></div>`;
+      <div class="row"><button id="join">Rejoindre la partie de ${esc(gp[0][1].name)}</button>${isHost?'<button class="alt" id="start">Commencer une nouvelle partie</button>':""}</div>`;
     else h+=`<div class="row"><button id="start">Commencer</button></div>`;
     h+="</div>";
   }else if(gp.length<2){
     h+=`<div class="panel"><h2>En attente d'un adversaire…</h2>
       <p>Envoie le lien de cette page à ton adversaire. Il ou elle clique sur « Rejoindre », et la partie démarre toute seule.</p>
-      <div class="link">${esc(location.href.split("#")[0])}</div>
+      <div class="link">${esc(location.href.split("#")[0]+"#"+uid)}</div>
       <div class="row"><button class="alt" id="start">Recommencer à zéro</button></div></div>`;
   }else{
     const oe=gp.find(([id])=>id!==uid),mp=me[1],op=oe[1];
@@ -259,12 +263,17 @@ function render(){
   }
 }
 
-(async function boot(){
-  const user=await claude.use("user"),d=await claude.use("db");
-  uid=user&&await user.id();
-  if(!d||!uid){app.innerHTML='<h1>Duel des pays</h1><div class="panel"><p>Connecte-toi à Claude pour jouer.</p></div>';return}
-  db=d;
-  db.doc("games/state").onSnapshot(s=>{game=s.exists?s.data():null;ready=true;render()},e=>console.error(e));
-  db.collection("players").onSnapshot(s=>{players={};s.docs.forEach(x=>players[x.id]=x.data());render()},e=>console.error(e));
+(function boot(){
+  const msg=t=>{app.innerHTML='<h1>Duel des pays</h1><div class="panel"><p>'+t+'</p></div>'};
+  if(!window.Peer){msg("Impossible de charger la connexion entre joueurs. Vérifie ta connexion internet.");return}
+  peer=new Peer();
+  peer.on("error",e=>msg("Connexion impossible ("+(e.type||"erreur")+"). "+(isHost?"Recharge la page.":"Vérifie le lien reçu, l'hôte doit garder sa page ouverte.")));
+  peer.on("open",id=>{
+    uid=id;
+    if(isHost){
+      ready=true;render();
+      peer.on("connection",c=>{if(conn&&conn.open){c.on("open",()=>c.close());return}wire(c)});
+    }else wire(peer.connect(hostId0,{reliable:true}));
+  });
 })();
 </script>
