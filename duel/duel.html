@@ -95,7 +95,6 @@ button.card:active:not(:disabled){transform:scale(.97)}
 @media (max-width:420px){.card{padding-inline:4px}.name{font-size:1.3rem}}
 </style>
 <main id="app"><h1>Duel des pays</h1><p class="mute">Connexion…</p></main>
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 const POP={"RU":144,"CA":40,"CN":1410,"US":335,"BR":212,"AU":26.5,"IN":1430,"AR":46,"KZ":20,"DZ":46,"CD":102,"SA":36,"MX":129,"ID":279,"SD":48,"LY":7,"IR":89,"MN":3.4,"PE":34,"TD":18,"NE":27,"AO":36,"ML":23,"ZA":60,"CO":52,"ET":126,"BO":12,"MR":4.9,"EG":112,"TZ":67,"NG":224,"VE":28,"PK":245,"NA":2.6,"MZ":34,"TR":85,"CL":19.6,"ZM":20,"MM":54,"AF":42,"SO":18,"CF":5.6,"UA":38,"MG":31,"BW":2.6,"KE":56,"FR":68,"YE":34,"TH":71,"ES":48,"TM":6.5,"CM":28,"PG":10,"SE":10.5,"UZ":36,"MA":37,"IQ":45,"PY":6.9,"ZW":16,"JP":124,"DE":84,"CG":6.1,"FI":5.6,"VN":100,"MY":34,"NO":5.5,"CI":29,"PL":37.7,"OM":4.6,"IT":59,"PH":117,"EC":18,"BF":23,"NZ":5.2,"GA":2.4,"GN":14,"GB":68,"UG":49,"GH":34,"RO":19,"LA":7.7,"GY":0.82,"BY":9.2,"KG":7,"SN":18,"SY":23,"KH":17,"UY":3.4,"SR":0.62,"TN":12,"BD":173,"NP":30,"TJ":10,"GR":10.4,"NI":7,"KP":26,"MW":21,"ER":3.7,"BJ":14,"HN":10.6,"LR":5.4,"BG":6.4,"CU":11,"GT":18,"IS":0.39,"KR":51.7,"HU":9.6,"PT":10.4,"JO":11.4,"RS":6.6,"AZ":10.4,"AT":9.1,"AE":10,"CZ":10.9,"PA":4.5,"SL":8.6,"IE":5.3,"GE":3.7,"LK":22,"LT":2.9,"LV":1.9,"TG":9,"HR":3.9,"BA":3.2,"CR":5.2,"SK":5.4,"DO":11.3,"EE":1.37,"DK":5.96,"NL":17.9,"CH":8.9,"BT":0.79,"TW":23.4,"GW":2.2,"MD":2.5,"BE":11.8,"LS":2.3,"AM":2.97,"AL":2.8,"SV":6.3,"SI":2.1,"FJ":0.93,"KW":4.3,"SZ":1.2,"TL":1.4,"QA":2.7,"JM":2.8,"LB":5.4,"CY":1.26,"LU":0.67,"MU":1.26,"MT":0.53,"LI":0.04,"SM":0.034,"MC":0.039};
 const COAST={"RU":37653,"CA":202080,"CN":14500,"US":19924,"BR":7491,"AU":25760,"IN":7000,"AR":4989,"DZ":998,"CD":37,"SA":2640,"MX":9330,"ID":54720,"SD":853,"LY":1770,"IR":2440,"PE":2414,"AO":1600,"ZA":2798,"CO":3208,"MR":754,"EG":2450,"TZ":1424,"NG":853,"VE":2800,"PK":1046,"NA":1572,"MZ":2470,"TR":7200,"CL":6435,"MM":1930,"SO":3025,"UA":2782,"MG":4828,"KE":536,"FR":4853,"YE":1906,"TH":3219,"ES":4964,"CM":402,"PG":5152,"SE":3218,"MA":1835,"IQ":58,"JP":29751,"DE":2389,"CG":169,"FI":1250,"VN":3444,"MY":4675,"NO":25148,"CI":515,"PL":440,"OM":2092,"IT":7600,"PH":36289,"EC":2237,"NZ":15134,"GA":885,"GN":320,"GB":12429,"GH":539,"RO":225,"GY":459,"SN":531,"SY":193,"KH":443,"UY":660,"SR":386,"TN":1148,"BD":580,"GR":13676,"NI":910,"KP":2495,"ER":2234,"BJ":121,"HN":820,"LR":579,"BG":354,"CU":3735,"GT":400,"IS":4970,"KR":2413,"PT":1793,"JO":26,"AE":1318,"PA":2490,"SL":402,"IE":1448,"GE":310,"LK":1340,"LT":90,"LV":498,"TG":56,"HR":5835,"BA":20,"CR":1290,"DO":1288,"EE":3794,"DK":7314,"NL":451,"TW":1566,"GW":350,"BE":67,"AL":362,"SV":307,"SI":47,"FJ":1129,"KW":499,"TL":706,"QA":563,"JM":1022,"LB":225,"CY":648,"MU":177,"MT":197,"MC":4};
@@ -190,14 +189,39 @@ function scoreOf(p,o){
 }
 
 const SLOTS=20,PREFIX="geo-duel-pays-v1-";
-let peer=null,conn=null,isHost=false,closed=false,slot=0;
-const send=m=>{if(conn&&conn.open)conn.send(m)};
-function putPlayer(d){players[uid]=d;send({p:{id:uid,d}});render()}
+// Réseau : messagerie web gratuite (ntfy.sh) comme boîte aux lettres. Aucun serveur à nous, aucune connexion directe.
+const SERVER=(new URLSearchParams(location.search).get("srv")||"https://ntfy.sh").replace(/\/$/,"");
+const NS="geo-duel-pays-v2-";
+const myId=Math.random().toString(36).slice(2,10);
+uid=myId;
+let isHost=false,closed=false,connected=false,topic=null,lobbySrc=null,gameSrc=null;
+let waiters={},seq=0,lastSeq={},status="",candidate=null,candSince=0,helloTimer=null,waitTimer=null,pairTimer=null,lobbyOpenedAt=0;
+const pub=(t,m)=>fetch(SERVER+"/"+t,{method:"POST",body:JSON.stringify(m),keepalive:true}).catch(()=>{});
+function sub(t,onmsg,since){
+  let src=null,last="",dead=false;
+  const open=()=>{
+    if(dead)return;
+    src=new EventSource(SERVER+"/"+t+"/sse?since="+(last||since));
+    src.onmessage=e=>{
+      try{
+        const d=JSON.parse(e.data);
+        if(d.event!=="message")return;
+        last=d.id;onmsg(JSON.parse(d.message),d.time*1000);
+      }catch(x){}
+    };
+    src.onerror=()=>{try{src.close()}catch(x){}setTimeout(open,2000)};
+  };
+  open();
+  return{close(){dead=true;if(src)src.close()}};
+}
+function setStatus(t){status=t;if(ready&&!connected)render()}
+const send=(m,kind)=>{m.f=myId;if(kind)m.s=++seq,m.k=kind;pub(topic,m)};
+function putPlayer(d){players[uid]=d;send({p:{id:uid,d}},"p");render()}
 function newPlayer(n){return{gameId:game.gameId,name:n,answers:{},ack:0,joinedAt:Date.now()}}
 function startGame(){
   if(!isHost){send({restart:true});return}
   game={gameId:Date.now().toString(36)+Math.random().toString(36).slice(2,6),host:uid,rounds:makeRounds()};
-  players={};send({g:game});
+  players={};send({g:game},"g");
   putPlayer(newPlayer("Joueur 1"));
 }
 function validate(r){
@@ -206,62 +230,68 @@ function validate(r){
 }
 function next(r){putPlayer({...players[uid],ack:r+1})}
 function onMsg(m){
-  if(m.full){tryNextSlot();return}
   if(m.g){game=m.g;if(!isHost)putPlayer(newPlayer("Joueur 2"))}
   if(m.p)players[m.p.id]=m.p.d;
   if(m.restart&&isHost)startGame();
   render();
 }
-function wire(c){
-  conn=c;
-  c.on("data",onMsg);
-  c.on("close",()=>{if(conn!==c)return;conn=null;closed=true;render()});
-  const hello=()=>{if(isHost)startGame();render()};
-  if(c.open)hello();else c.on("open",hello);
-}
-function fatal(t){ready=true;app.innerHTML='<h1>Duel des pays</h1><div class="panel"><p>'+t+'</p><div class="row"><button onclick="location.reload()">Réessayer</button></div></div>'}
-const ICE={config:{iceServers:[
-  {urls:"stun:stun.l.google.com:19302"},{urls:"stun:global.stun.twilio.com:3478"},
-  {urls:["turn:openrelay.metered.ca:80","turn:openrelay.metered.ca:443","turn:openrelay.metered.ca:443?transport=tcp"],username:"openrelayproject",credential:"openrelayproject"}]}};
-let status="",scanTimer=null;
-function setStatus(t){status=t;if(ready&&gamePlayers().length<2)render()}
-function restartScan(){slot=0;tryNextSlot()}
-function tryNextSlot(){
-  clearTimeout(scanTimer);
-  if(peer){try{peer.destroy()}catch(e){}peer=null}
-  conn=null;isHost=false;slot++;
-  if(slot>SLOTS){restartScan();return}
-  const id=PREFIX+slot;
-  const p=new Peer(id,ICE);peer=p;
-  setStatus("Salle "+slot+" : recherche…");
-  p.on("open",myId=>{
-    // Premier arrivé sur ce créneau : on est l'hôte et on attend un adversaire.
-    uid=myId;isHost=true;ready=true;setStatus("Salle "+slot+" : tu es l'hôte");render();
-    p.on("connection",c=>{
-      if(conn&&conn.open){c.on("open",()=>{c.send({full:true});setTimeout(()=>c.close(),300)});return}
-      clearTimeout(scanTimer);wire(c);
-    });
-    // Si personne n'arrive, on relance la recherche (évite que deux joueurs attendent dans deux salles différentes)
-    scanTimer=setTimeout(()=>{if(peer===p&&!(conn&&conn.open))restartScan()},9000+Math.random()*9000);
-  });
-  p.on("error",e=>{
-    if(p!==peer)return;
-    if(e.type==="unavailable-id"){
-      // Créneau déjà occupé : on rejoint son hôte.
-      p.destroy();
-      const g=new Peer(ICE);peer=g;
-      g.on("open",myId=>{
-        uid=myId;setStatus("Salle "+slot+" : connexion à l'adversaire…");
-        const c=g.connect(id,{reliable:true});
-        const t=setTimeout(()=>{if(!c.open&&peer===g)tryNextSlot()},15000);
-        c.on("open",()=>{clearTimeout(t);setStatus("Salle "+slot+" : connecté")});
-        wire(c);ready=true;
-      });
-      g.on("error",()=>{if(peer===g)tryNextSlot()});
-    }else fatal("Connexion impossible ("+(e.type||"erreur")+").");
-  });
-}
 
+// --- Salon : les joueurs en attente s'annoncent, ils sont appariés par ordre d'identifiant ---
+let srvOff=0;
+const live=()=>{const now=Date.now()-srvOff;return Object.keys(waiters).filter(id=>now-waiters[id]<13000).concat(myId).sort()};
+function lobbyStart(){
+  clearInterval(waitTimer);clearInterval(pairTimer);clearInterval(helloTimer);
+  if(gameSrc){gameSrc.close();gameSrc=null}
+  if(lobbySrc)lobbySrc.close();
+  waiters={};candidate=null;topic=null;connected=false;
+  setStatus("Recherche d'un adversaire…");
+  lobbySrc=sub(NS+"lobby",(m,t)=>{
+    if(m.id===myId)return;
+    if(m.t==="wait")waiters[m.id]=t;
+    else if(m.t==="gone"&&m.with!==myId)delete waiters[m.id];
+  },"15s");
+  const announce=()=>fetch(SERVER+"/"+NS+"lobby",{method:"POST",body:JSON.stringify({t:"wait",id:myId})})
+    .then(r=>r.json()).then(j=>{if(j&&j.time)srvOff=Date.now()-j.time*1000}).catch(()=>{});
+  announce();waitTimer=setInterval(announce,5000);
+  pairTimer=setInterval(tryPair,1000);
+  ready=true;render();
+}
+function tryPair(){
+  const l=live(),i=l.indexOf(myId),pid=l[i^1];
+  if(l.length>1&&!pid){render();return}
+  if(!pid){candidate=null;render();return}
+  if(pid!==candidate){candidate=pid;candSince=Date.now()}
+  render();
+  if(Date.now()-candSince>=2500)pairWith(pid);
+}
+function pairWith(pid){
+  clearInterval(waitTimer);clearInterval(pairTimer);
+  if(lobbySrc){lobbySrc.close();lobbySrc=null}
+  pub(NS+"lobby",{t:"gone",id:myId,with:pid});
+  isHost=myId<pid;
+  topic=NS+"g-"+[myId,pid].sort().join("-");
+  setStatus("Adversaire trouvé, connexion…");
+  const t0=Date.now();
+  gameSrc=sub(topic,gotGame,"60s");
+  const hello=()=>{
+    if(connected)return;
+    if(Date.now()-t0>12000){lobbyStart();return}
+    send({t:"hello"});
+  };
+  hello();helloTimer=setInterval(hello,2500);
+}
+function gotGame(m){
+  if(m.f===myId)return;
+  if(m.t==="hello"){
+    if(!connected){connected=true;clearInterval(helloTimer);send({t:"hello"});setStatus("Connecté");if(isHost)startGame();render()}
+    return;
+  }
+  if(m.t==="bye"){closed=true;render();return}
+  if(m.k){const key=m.k+m.f;if(m.s<=(lastSeq[key]||0))return;lastSeq[key]=m.s}
+  onMsg(m);
+}
+addEventListener("pagehide",()=>{if(topic&&connected)send({t:"bye"})});
+function fatal(t){ready=true;app.innerHTML='<h1>Duel des pays</h1><div class="panel"><p>'+t+'</p><div class="row"><button onclick="location.reload()">Réessayer</button></div></div>'}
 function fail(e){console.error(e);alert_("Une erreur est survenue. Réessaie.")}
 function alert_(msg){
   const d=document.createElement("div");d.className="panel";d.setAttribute("role","alert");d.textContent=msg;
@@ -283,8 +313,8 @@ function render(){
   if(closed){
     h+=`<div class="panel"><h2>Ton adversaire a quitté la partie</h2><div class="row"><button id="again">Nouvelle partie</button></div></div>`;
   }else if(gp.length<2){
-    h+=`<div class="panel"><div class="big">${conn&&conn.open?2:1} / 2</div>
-      <h2 style="text-align:center">${isHost?"En attente d'un adversaire…":"Connexion à la partie…"}</h2>
+    h+=`<div class="panel"><div class="big">${Math.min(live().length,2)} / 2</div>
+      <h2 style="text-align:center">${live().length>1?"Adversaire trouvé !":"En attente d'un adversaire…"}</h2>
       <p class="mute" style="text-align:center"><span style="display:block;font-size:.85rem;margin-bottom:6px">${esc(status)}</span>Dès qu'un deuxième joueur arrive sur cette page, la partie démarre toute seule. 20 manches qui alternent superficie, population, côtes et densité. 1 point par bonne réponse.</p></div>`;
   }else{
     const oe=gp.find(([id])=>id!==uid),mp=me[1],op=oe[1];
@@ -343,8 +373,8 @@ function render(){
 }
 
 (function boot(){
-  if(!window.Peer){fatal("Impossible de charger la connexion entre joueurs. Vérifie ta connexion internet.");return}
-  tryNextSlot();
+  if(!window.EventSource||!window.fetch){fatal("Ce navigateur n'est pas compatible.");return}
+  lobbyStart();
 })();
 </script>
 </html>
