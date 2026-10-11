@@ -215,36 +215,46 @@ function onMsg(m){
 function wire(c){
   conn=c;
   c.on("data",onMsg);
-  c.on("close",()=>{conn=null;closed=true;render()});
+  c.on("close",()=>{if(conn!==c)return;conn=null;closed=true;render()});
   const hello=()=>{if(isHost)startGame();render()};
   if(c.open)hello();else c.on("open",hello);
 }
 function fatal(t){ready=true;app.innerHTML='<h1>Duel des pays</h1><div class="panel"><p>'+t+'</p><div class="row"><button onclick="location.reload()">Réessayer</button></div></div>'}
+const ICE={config:{iceServers:[
+  {urls:"stun:stun.l.google.com:19302"},{urls:"stun:global.stun.twilio.com:3478"},
+  {urls:["turn:openrelay.metered.ca:80","turn:openrelay.metered.ca:443","turn:openrelay.metered.ca:443?transport=tcp"],username:"openrelayproject",credential:"openrelayproject"}]}};
+let status="",scanTimer=null;
+function setStatus(t){status=t;if(ready&&gamePlayers().length<2)render()}
+function restartScan(){slot=0;tryNextSlot()}
 function tryNextSlot(){
+  clearTimeout(scanTimer);
   if(peer){try{peer.destroy()}catch(e){}peer=null}
   conn=null;isHost=false;slot++;
-  if(slot>SLOTS){fatal("Toutes les parties sont occupées. Réessaie dans un instant.");return}
+  if(slot>SLOTS){restartScan();return}
   const id=PREFIX+slot;
-  const p=new Peer(id);peer=p;
+  const p=new Peer(id,ICE);peer=p;
+  setStatus("Salle "+slot+" : recherche…");
   p.on("open",myId=>{
     // Premier arrivé sur ce créneau : on est l'hôte et on attend un adversaire.
-    uid=myId;isHost=true;ready=true;render();
+    uid=myId;isHost=true;ready=true;setStatus("Salle "+slot+" : tu es l'hôte");render();
     p.on("connection",c=>{
       if(conn&&conn.open){c.on("open",()=>{c.send({full:true});setTimeout(()=>c.close(),300)});return}
-      wire(c);
+      clearTimeout(scanTimer);wire(c);
     });
+    // Si personne n'arrive, on relance la recherche (évite que deux joueurs attendent dans deux salles différentes)
+    scanTimer=setTimeout(()=>{if(peer===p&&!(conn&&conn.open))restartScan()},9000+Math.random()*9000);
   });
   p.on("error",e=>{
     if(p!==peer)return;
     if(e.type==="unavailable-id"){
       // Créneau déjà occupé : on rejoint son hôte.
       p.destroy();
-      const g=new Peer();peer=g;
+      const g=new Peer(ICE);peer=g;
       g.on("open",myId=>{
-        uid=myId;
+        uid=myId;setStatus("Salle "+slot+" : connexion à l'adversaire…");
         const c=g.connect(id,{reliable:true});
-        const t=setTimeout(()=>{if(!c.open&&peer===g)tryNextSlot()},6000);
-        c.on("open",()=>clearTimeout(t));
+        const t=setTimeout(()=>{if(!c.open&&peer===g)tryNextSlot()},15000);
+        c.on("open",()=>{clearTimeout(t);setStatus("Salle "+slot+" : connecté")});
         wire(c);ready=true;
       });
       g.on("error",()=>{if(peer===g)tryNextSlot()});
@@ -275,7 +285,7 @@ function render(){
   }else if(gp.length<2){
     h+=`<div class="panel"><div class="big">${conn&&conn.open?2:1} / 2</div>
       <h2 style="text-align:center">${isHost?"En attente d'un adversaire…":"Connexion à la partie…"}</h2>
-      <p class="mute" style="text-align:center">Dès qu'un deuxième joueur arrive sur cette page, la partie démarre toute seule. 20 manches qui alternent superficie, population, côtes et densité. 1 point par bonne réponse.</p></div>`;
+      <p class="mute" style="text-align:center"><span style="display:block;font-size:.85rem;margin-bottom:6px">${esc(status)}</span>Dès qu'un deuxième joueur arrive sur cette page, la partie démarre toute seule. 20 manches qui alternent superficie, population, côtes et densité. 1 point par bonne réponse.</p></div>`;
   }else{
     const oe=gp.find(([id])=>id!==uid),mp=me[1],op=oe[1];
     const r=Math.min(mp.ack,op.ack);
