@@ -93,7 +93,9 @@ button.card:active:not(:disabled){transform:scale(.97)}
 @keyframes pulse{50%{opacity:.45}}
 .panel:has(h2) .big{animation:pulse 1.6s ease-in-out infinite}
 @media (max-width:420px){.card{padding-inline:4px}.name{font-size:1.3rem}}
+#ver{position:fixed;right:10px;bottom:6px;font-size:.8rem;color:var(--mute);opacity:.8;pointer-events:none}
 </style>
+<div id="ver"></div>
 <main id="app"><h1>Duel des pays</h1><p class="mute">Connexion…</p></main>
 <script>
 const POP={"RU":144,"CA":40,"CN":1410,"US":335,"BR":212,"AU":26.5,"IN":1430,"AR":46,"KZ":20,"DZ":46,"CD":102,"SA":36,"MX":129,"ID":279,"SD":48,"LY":7,"IR":89,"MN":3.4,"PE":34,"TD":18,"NE":27,"AO":36,"ML":23,"ZA":60,"CO":52,"ET":126,"BO":12,"MR":4.9,"EG":112,"TZ":67,"NG":224,"VE":28,"PK":245,"NA":2.6,"MZ":34,"TR":85,"CL":19.6,"ZM":20,"MM":54,"AF":42,"SO":18,"CF":5.6,"UA":38,"MG":31,"BW":2.6,"KE":56,"FR":68,"YE":34,"TH":71,"ES":48,"TM":6.5,"CM":28,"PG":10,"SE":10.5,"UZ":36,"MA":37,"IQ":45,"PY":6.9,"ZW":16,"JP":124,"DE":84,"CG":6.1,"FI":5.6,"VN":100,"MY":34,"NO":5.5,"CI":29,"PL":37.7,"OM":4.6,"IT":59,"PH":117,"EC":18,"BF":23,"NZ":5.2,"GA":2.4,"GN":14,"GB":68,"UG":49,"GH":34,"RO":19,"LA":7.7,"GY":0.82,"BY":9.2,"KG":7,"SN":18,"SY":23,"KH":17,"UY":3.4,"SR":0.62,"TN":12,"BD":173,"NP":30,"TJ":10,"GR":10.4,"NI":7,"KP":26,"MW":21,"ER":3.7,"BJ":14,"HN":10.6,"LR":5.4,"BG":6.4,"CU":11,"GT":18,"IS":0.39,"KR":51.7,"HU":9.6,"PT":10.4,"JO":11.4,"RS":6.6,"AZ":10.4,"AT":9.1,"AE":10,"CZ":10.9,"PA":4.5,"SL":8.6,"IE":5.3,"GE":3.7,"LK":22,"LT":2.9,"LV":1.9,"TG":9,"HR":3.9,"BA":3.2,"CR":5.2,"SK":5.4,"DO":11.3,"EE":1.37,"DK":5.96,"NL":17.9,"CH":8.9,"BT":0.79,"TW":23.4,"GW":2.2,"MD":2.5,"BE":11.8,"LS":2.3,"AM":2.97,"AL":2.8,"SV":6.3,"SI":2.1,"FJ":0.93,"KW":4.3,"SZ":1.2,"TL":1.4,"QA":2.7,"JM":2.8,"LB":5.4,"CY":1.26,"LU":0.67,"MU":1.26,"MT":0.53,"LI":0.04,"SM":0.034,"MC":0.039};
@@ -190,6 +192,8 @@ function scoreOf(p,o){
 
 const SLOTS=20,PREFIX="geo-duel-pays-v1-";
 // Réseau : messagerie web gratuite (ntfy.sh) comme boîte aux lettres. Aucun serveur à nous, aucune connexion directe.
+const VERSION="10";
+document.getElementById("ver").textContent="v"+VERSION;
 const SERVER=(new URLSearchParams(location.search).get("srv")||"https://ntfy.sh").replace(/\/$/,"");
 const NS="geo-duel-pays-v2-";
 const myId=Math.random().toString(36).slice(2,10);
