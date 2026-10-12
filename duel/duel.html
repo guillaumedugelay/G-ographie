@@ -197,16 +197,22 @@ function scoreOf(p,o){
 
 const SLOTS=20,PREFIX="geo-duel-pays-v1-";
 // Réseau : Firebase Realtime Database (même projet que mk8-random), connexion anonyme.
-const VERSION="11";
+const VERSION="12";
 document.getElementById("ver").textContent="v"+VERSION;
 const myId=Math.random().toString(36).slice(2,10);
 uid=myId;
 let isHost=false,closed=false,connected=false,topic=null,lobbySrc=null,gameSrc=null;
 let waiters={},seq=0,lastSeq={},status="",candidate=null,candSince=0,helloTimer=null,waitTimer=null,pairTimer=null;
 let fdb=null;
+// Erreur réseau ou règles Firebase : affichée à l'écran pour pouvoir diagnostiquer
+function netError(e){
+  console.error(e);
+  const msg=String((e&&(e.code||e.message))||e);
+  setStatus(/permission/i.test(msg)?"Accès refusé par la base Firebase (règles « duel » à ajouter)":"Erreur : "+msg);
+}
 const gameRef=()=>ref(fdb,"duel/games/"+topic);
 function setStatus(t){status=t;if(ready&&!connected)render()}
-const send=(m,kind)=>{m.f=myId;if(kind)m.s=++seq,m.k=kind;push(gameRef(),m).catch(e=>console.error(e))};
+const send=(m,kind)=>{m.f=myId;if(kind)m.s=++seq,m.k=kind;push(gameRef(),m).catch(netError)};
 function putPlayer(d){players[uid]=d;send({p:{id:uid,d}},"p");render()}
 function newPlayer(n){return{gameId:game.gameId,name:n,answers:{},ack:0,joinedAt:Date.now()}}
 function startGame(){
@@ -241,9 +247,9 @@ function lobbyStart(){
   const unsub=onValue(ref(fdb,"duel/lobby"),snap=>{
     const v=snap.val()||{};waiters={};
     Object.keys(v).forEach(id=>{if(id!==myId&&v[id]&&v[id].t)waiters[id]=v[id].t});
-  });
+  },netError);
   lobbySrc={close:unsub};
-  const announce=()=>set(me,{t:serverTimestamp()}).catch(e=>console.error(e));
+  const announce=()=>set(me,{t:serverTimestamp()}).catch(netError);
   announce();waitTimer=setInterval(announce,5000);
   pairTimer=setInterval(tryPair,1000);
   ready=true;render();
