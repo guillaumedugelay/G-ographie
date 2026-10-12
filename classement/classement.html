@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="fr"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Classement des pays</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&display=swap">
+<link rel="stylesheet" href="../css/jeux.css">
+</head><body>
+<div id="ver"></div>
+<main id="app"><h1>Classement</h1><p class="mute">Connexion…</p></main>
+<script type="module">
+import{createDuo,commonScreen,bindCommon,esc}from"../js/duo.js";
+import{JEUX,flag}from"../js/classements.js";
+
+const VERSION="14";
+document.getElementById("ver").textContent="v"+VERSION;
+const jeuKey=new URLSearchParams(location.search).get("jeu")||"altitude";
+const JEU=JEUX[jeuKey]||JEUX.altitude;
+const N=10;
+const DATA=JEU.data.map(([code,name,v])=>({name,v,flag:flag(code)}));
+document.title=JEU.titre;
+const app=document.getElementById("app");
+
+// Tire 10 pays dont les valeurs sont toutes écartées d'au moins minGap
+function draw(){
+  for(let t=0;t<200;t++){
+    const idx=DATA.map((c,i)=>i).sort(()=>Math.random()-.5),out=[];
+    for(const i of idx){
+      if(out.every(j=>Math.abs(DATA[i].v-DATA[j].v)>=JEU.minGap))out.push(i);
+      if(out.length===N)return out;
+    }
+  }
+  return DATA.map((c,i)=>i).sort(()=>Math.random()-.5).slice(0,N);
+}
+
+let picks=null,mine=[],submitted=null,theirs=null;
+const duo=createDuo({key:"classement-"+jeuKey+"-v14",onChange:render,
+  onStart(){picks=draw();reset();duo.send({start:true,picks})},
+  onMessage(m){
+    if(m.start){picks=m.picks;reset()}
+    if(m.order)theirs=m.order;
+  }});
+function reset(){mine=[];submitted=null;theirs=null}
+
+const truth=()=>[...picks].sort((a,b)=>DATA[b].v-DATA[a].v);
+// Score : pays placés au bon rang ; en cas d'égalité, nombre de paires dans le bon ordre
+function score(order){
+  const t=truth();let exact=0,pairs=0;
+  order.forEach((c,i)=>{if(t[i]===c)exact++});
+  for(let i=0;i<N;i++)for(let j=i+1;j<N;j++)if(DATA[order[i]].v>DATA[order[j]].v)pairs++;
+  return{exact,pairs};
+}
+
+function render(){
+  const focused=document.activeElement&&document.activeElement.id==="nm";
+  let h=`<a class="back" href="../">← Menu</a><h1>${JEU.ico} ${esc(JEU.titre)}</h1>`;
+  const common=commonScreen(duo,{intro:"Dès qu'un deuxième joueur arrive, vous choisissez vos prénoms puis la partie démarre. "+JEU.consigne+" Le plus juste gagne."});
+  const opn=esc(duo.oppName());
+  if(common!==null||!picks){
+    h+=common||"";
+  }else if(duo.forfeit){
+    h+=`<div class="panel"><div class="big" style="font-size:clamp(2rem,9vw,3rem)">${duo.forfeit==="me"?"Tu as abandonné. "+opn+" gagne":opn+" a abandonné. Tu gagnes 🏆"}</div>
+      <div class="row" style="justify-content:center"><button id="again">Rejouer</button></div></div>`;
+  }else if(submitted&&theirs){
+    const t=truth(),a=score(submitted),b=score(theirs);
+    const win=a.exact!==b.exact?(a.exact>b.exact?1:-1):a.pairs!==b.pairs?(a.pairs>b.pairs?1:-1):0;
+    const res=win>0?"Tu as gagné 🏆":win<0?opn+" a gagné":"Égalité";
+    h+=`<div class="score">
+      <div class="sc a"><div class="n">${esc(duo.me.name||"Toi")}</div><div class="v">${a.exact}</div></div>
+      <div class="mid">bien<br>placés</div>
+      <div class="sc b"><div class="n">${opn}</div><div class="v">${b.exact}</div></div></div>
+      <div class="panel"><div class="big" style="font-size:clamp(2rem,9vw,3rem)">${res}</div>
+      ${a.exact===b.exact?`<p class="mute" style="text-align:center">Égalité de pays bien placés : départagés par les paires dans le bon ordre (${a.pairs} contre ${b.pairs} sur 45).</p>`:""}</div>
+      <p class="hint">Le bon classement (${esc(JEU.haut.toLowerCase())} en haut) :</p><div class="rank">`;
+    t.forEach((c,i)=>{
+      const pa=submitted.indexOf(c),pb=theirs.indexOf(c);
+      h+=`<div class="rk"><div class="pos">${i+1}</div><div class="fl">${DATA[c].flag}</div>
+        <div class="nm">${esc(DATA[c].name)}<div class="vv" style="text-align:left">${JEU.fmt(DATA[c].v)}</div></div>
+        <div class="pp"><span class="a${pa===i?"":" x"}">Toi ${pa+1}</span><span class="b${pb===i?"":" x"}">${opn} ${pb+1}</span></div></div>`;
+    });
+    h+=`</div><div class="row" style="justify-content:center"><button id="again">Rejouer</button></div>`;
+  }else if(submitted){
+    h+=`<div class="panel"><h2>Classement envoyé</h2><p class="mute">En attente du classement de ${opn}…</p></div>
+      <div class="row" style="justify-content:center"><button class="giveup" id="giveup">Abandonner</button></div>`;
+  }else{
+    h+=`<p class="hint">${esc(JEU.consigne)}<br>Touche les pays dans l'ordre, du <b>${esc(JEU.haut.toLowerCase())}</b> au <b>${esc(JEU.bas.toLowerCase())}</b>. Touche à nouveau un pays pour le retirer.</p><div class="rank">`;
+    picks.forEach(c=>{
+      const p=mine.indexOf(c);
+      h+=`<button class="rk${p>=0?" on":""}" data-c="${c}"><div class="pos">${p>=0?p+1:""}</div><div class="fl">${DATA[c].flag}</div><div class="nm">${esc(DATA[c].name)}</div></button>`;
+    });
+    h+=`</div><div class="row"><button id="send"${mine.length<N?" disabled":""}>Valider mon classement (${mine.length}/${N})</button>
+      ${mine.length?'<button class="alt" id="clear">Effacer</button>':""}</div>
+      <div class="row" style="justify-content:center"><button class="giveup" id="giveup">Abandonner</button></div>`;
+  }
+  app.innerHTML=h;
+  bindCommon(duo,app);
+  if(focused){const nm=document.getElementById("nm");if(nm&&!nm.disabled){nm.focus();nm.setSelectionRange(nm.value.length,nm.value.length)}}
+  const $=id=>document.getElementById(id);
+  app.querySelectorAll("button.rk").forEach(b=>b.onclick=()=>{
+    const c=+b.dataset.c,p=mine.indexOf(c);
+    if(p>=0)mine.splice(p,1);else mine.push(c);
+    render();
+  });
+  if($("send"))$("send").onclick=()=>{if(mine.length<N)return;submitted=[...mine];duo.send({order:submitted});render()};
+  if($("clear"))$("clear").onclick=()=>{mine=[];render()};
+  if($("giveup"))$("giveup").onclick=()=>{if(confirm("Abandonner la partie ? Ton adversaire gagnera."))duo.giveUp()};
+  if($("again"))$("again").onclick=()=>{picks=null;reset();duo.toRoom()};
+}
+render();
+duo.start();
+</script>
+</body></html>
