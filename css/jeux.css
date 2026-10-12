@@ -115,3 +115,7 @@ button.card:active:not(:disabled){transform:scale(.97)}
 .rk .pp .a{background:var(--p1)} .rk .pp .b{background:var(--p2)}
 .rk .pp .x{opacity:.45}
 .hint{color:var(--mute);text-align:center;font-size:1rem}
+/* Glisser-déposer */
+.rk.drag{user-select:none;-webkit-user-select:none;transition:transform .15s;cursor:grab}
+.rk.lift{transition:none;position:relative;z-index:2;border-color:var(--p1);box-shadow:0 10px 28px rgba(16,38,58,.28);cursor:grabbing}
+.rk .handle{font-size:1.7rem;line-height:1;padding:10px 14px;margin:-10px -10px -10px 0;color:var(--mute);touch-action:none;cursor:grab}
