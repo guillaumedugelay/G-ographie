@@ -197,7 +197,7 @@ function scoreOf(p,o){
 
 const SLOTS=20,PREFIX="geo-duel-pays-v1-";
 // Réseau : Firebase Realtime Database (même projet que mk8-random), connexion anonyme.
-const VERSION="12";
+const VERSION="13";
 document.getElementById("ver").textContent="v"+VERSION;
 const myId=Math.random().toString(36).slice(2,10);
 uid=myId;
@@ -285,6 +285,8 @@ function gotGame(m){
   }
   if(m.t==="bye"){closed=true;render();return}
   if(m.k){const key=m.k+m.f;if(m.s<=(lastSeq[key]||0))return;lastSeq[key]=m.s}
+  // Firebase supprime les objets vides et transforme {0:..,1:..} en tableau : on remet les réponses en forme
+  if(m.p&&m.p.d){const a={},src=m.p.d.answers||{};Object.keys(src).forEach(k=>{if(src[k]!=null)a[k]=src[k]});m.p.d.answers=a}
   onMsg(m);
 }
 addEventListener("pagehide",()=>{if(topic&&connected)send({t:"bye"})});
