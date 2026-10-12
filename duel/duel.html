@@ -5,104 +5,11 @@
 <title>Duel des pays</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&display=swap">
-<style>
-/* Mise en page : une carte marine, un duel de deux cartes face à face, scores de chaque joueur en tête */
-:root{
-  --bg:#e6edf0; --panel:#f6f9fa; --ink:#10263a; --mute:#5b7183; --line:#c4d1d9;
-  --p1:#1d4ed8; --p2:#e0590d; --ok:#15803d; --ko:#b91c1c; --grat:rgba(16,38,58,.07);
-  --display:"Bricolage Grotesque",system-ui,sans-serif; --body:"Figtree",system-ui,sans-serif;
-}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0c1a27; --panel:#132636; --ink:#e8f0f5; --mute:#8ba2b3; --line:#27425a;
-  --p1:#6c9bff; --p2:#ff9a5c; --ok:#4ade80; --ko:#f87171; --grat:rgba(232,240,245,.06); color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0c1a27; --panel:#132636; --ink:#e8f0f5; --mute:#8ba2b3; --line:#27425a;
-  --p1:#6c9bff; --p2:#ff9a5c; --ok:#4ade80; --ko:#f87171; --grat:rgba(232,240,245,.06); color-scheme:dark}
-*{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;
-  background-image:linear-gradient(var(--grat) 1px,transparent 1px),linear-gradient(90deg,var(--grat) 1px,transparent 1px);
-  background-size:48px 48px;padding-inline:16px;padding-block:20px;min-height:100vh}
-main{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
-h1{font-family:var(--display);font-weight:800;font-size:clamp(1.8rem,6vw,2.6rem);margin:0;line-height:1.05;text-wrap:balance}
-h2{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;text-wrap:balance}
-p{margin:0;line-height:1.5}
-.mute{color:var(--mute)}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px;display:flex;flex-direction:column;gap:14px}
-label{font-weight:600;font-size:.9rem}
-input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:6px;padding:12px;width:100%}
-button{font:inherit;font-weight:600;cursor:pointer;border-radius:6px;border:1.5px solid var(--ink);padding:12px 20px;background:var(--ink);color:var(--bg)}
-button.alt{background:transparent;color:var(--ink)}
-button:disabled{opacity:.4;cursor:default}
-button:focus-visible,input:focus-visible{outline:3px solid var(--p1);outline-offset:2px}
-.row{display:flex;gap:12px;flex-wrap:wrap}
-.score{display:flex;gap:12px;align-items:stretch}
-.sc{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 14px;border-top:5px solid}
-.sc.a{border-top-color:var(--p1)} .sc.b{border-top-color:var(--p2)}
-.sc .n{font-size:.85rem;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sc .v{font-family:var(--display);font-weight:800;font-size:2rem;line-height:1.1;font-variant-numeric:tabular-nums}
-.mid{display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:var(--display);font-weight:800;min-width:64px;text-align:center;font-size:.85rem;color:var(--mute)}
-.mid b{font-size:1.4rem;color:var(--ink);font-variant-numeric:tabular-nums}
-.duel{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.card{position:relative;background:var(--panel);color:var(--ink);border:2px solid var(--line);border-radius:6px;padding:26px 10px 18px;
-  display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}
-button.card:hover:not(:disabled){border-color:var(--ink)}
-button.card:disabled{opacity:1}
-.card.sel{border-color:var(--p1);box-shadow:0 0 0 3px var(--p1) inset}
-.card.good{border-color:var(--ok)} .card.bad{opacity:.85}
-.flag{font-size:clamp(3.2rem,16vw,5rem);line-height:1}
-.name{font-family:var(--display);font-weight:800;font-size:1.25rem;text-align:center;text-wrap:balance}
-.area{font-variant-numeric:tabular-nums;color:var(--mute);min-height:1.4em}
-.card.good .area{color:var(--ok);font-weight:600}
-.tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;min-height:26px}
-.tag{font-size:.78rem;font-weight:600;padding:3px 9px;border-radius:99px;color:#fff;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tag.a{background:var(--p1)} .tag.b{background:var(--p2)}
-:root[data-theme="dark"] .tag{color:#0c1a27}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tag{color:#0c1a27}}
-.verdict{display:flex;gap:10px;flex-wrap:wrap}
-.vd{flex:1;min-width:140px;border:1.5px solid var(--line);border-radius:6px;padding:10px 12px;background:var(--panel);font-weight:600}
-.vd.ok{border-color:var(--ok);color:var(--ok)} .vd.ko{border-color:var(--ko);color:var(--ko)}
-.link{font-family:ui-monospace,monospace;font-size:.85rem;background:var(--bg);border:1px dashed var(--line);padding:10px;border-radius:6px;word-break:break-all}
-.big{font-family:var(--display);font-weight:800;font-size:clamp(2.4rem,10vw,3.6rem);text-align:center;font-variant-numeric:tabular-nums}
-@media (max-width:420px){.card{padding-inline:6px}.name{font-size:1.05rem}}
-
-/* Version mobile : tout est plus grand, cartes plus marquées */
-body{font-size:18px;padding-inline:14px;background-image:radial-gradient(circle at 20% 0%,rgba(29,78,216,.14),transparent 45%),radial-gradient(circle at 90% 100%,rgba(224,89,13,.14),transparent 45%),linear-gradient(var(--grat) 1px,transparent 1px),linear-gradient(90deg,var(--grat) 1px,transparent 1px);background-size:auto,auto,48px 48px,48px 48px}
-main{gap:18px}
-h1{font-size:clamp(2.2rem,9vw,3rem);text-align:center}
-h2{font-size:1.8rem}
-.panel{border-radius:16px;padding:24px;box-shadow:0 6px 24px rgba(16,38,58,.12)}
-button{font-size:1.15rem;padding:16px 24px;border-radius:14px;min-height:56px}
-.row button{flex:1}
-.score{gap:10px}
-.sc{border-radius:14px;padding:12px 16px;border-top-width:6px}
-.sc .n{font-size:1rem}
-.sc .v{font-size:2.8rem}
-.mid{font-size:1rem;min-width:70px}.mid b{font-size:1.7rem}
-.duel{gap:12px}
-.card{border-radius:18px;padding:30px 8px 22px;gap:10px;box-shadow:0 4px 16px rgba(16,38,58,.12);transition:transform .12s,border-color .12s}
-button.card:active:not(:disabled){transform:scale(.97)}
-.card.sel{transform:scale(1.03);box-shadow:0 0 0 4px var(--p1) inset,0 8px 24px rgba(29,78,216,.3)}
-.card.good{box-shadow:0 0 0 4px var(--ok) inset,0 8px 24px rgba(21,128,61,.3)}
-.flag{font-size:clamp(4.5rem,24vw,7.5rem)}
-.name{font-size:1.5rem}
-.area{font-size:1.1rem}
-.tag{font-size:.95rem;padding:4px 12px}
-.vd{font-size:1.1rem;border-radius:14px;padding:14px}
-.q{text-align:center;font-size:1.5rem}
-.big{font-size:clamp(3.4rem,18vw,5.5rem)}
-@keyframes pulse{50%{opacity:.45}}
-.panel:has(h2) .big{animation:pulse 1.6s ease-in-out infinite}
-@media (max-width:420px){.card{padding-inline:4px}.name{font-size:1.3rem}}
-#ver{position:fixed;right:10px;bottom:6px;font-size:.8rem;color:var(--mute);opacity:.8;pointer-events:none}
-</style>
+<link rel="stylesheet" href="../css/jeux.css">
 <div id="ver"></div>
 <main id="app"><h1>Duel des pays</h1><p class="mute">Connexion…</p></main>
 <script type="module">
-import{initializeApp}from"https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-import{getAuth,signInAnonymously}from"https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-import{getDatabase,ref,push,set,remove,onValue,onChildAdded,onDisconnect,serverTimestamp}from"https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
-// Configuration web du projet Firebase (publique par conception) : à renseigner, voir src/firebase.js de mk8-random
-const FIREBASE_CONFIG={apiKey:"AIzaSyAe3C_t4mhxCom1MuzRmmJM3coRcS-y5GM",authDomain:"mk8-random.firebaseapp.com",databaseURL:"https://mk8-random-default-rtdb.europe-west1.firebasedatabase.app",projectId:"mk8-random",storageBucket:"mk8-random.firebasestorage.app",messagingSenderId:"955981216553",appId:"1:955981216553:web:e9135d716291da54d3d538"};
+import{createDuo,commonScreen,bindCommon,esc}from"../js/duo.js";
 const POP={"RU":144,"CA":40,"CN":1410,"US":335,"BR":212,"AU":26.5,"IN":1430,"AR":46,"KZ":20,"DZ":46,"CD":102,"SA":36,"MX":129,"ID":279,"SD":48,"LY":7,"IR":89,"MN":3.4,"PE":34,"TD":18,"NE":27,"AO":36,"ML":23,"ZA":60,"CO":52,"ET":126,"BO":12,"MR":4.9,"EG":112,"TZ":67,"NG":224,"VE":28,"PK":245,"NA":2.6,"MZ":34,"TR":85,"CL":19.6,"ZM":20,"MM":54,"AF":42,"SO":18,"CF":5.6,"UA":38,"MG":31,"BW":2.6,"KE":56,"FR":68,"YE":34,"TH":71,"ES":48,"TM":6.5,"CM":28,"PG":10,"SE":10.5,"UZ":36,"MA":37,"IQ":45,"PY":6.9,"ZW":16,"JP":124,"DE":84,"CG":6.1,"FI":5.6,"VN":100,"MY":34,"NO":5.5,"CI":29,"PL":37.7,"OM":4.6,"IT":59,"PH":117,"EC":18,"BF":23,"NZ":5.2,"GA":2.4,"GN":14,"GB":68,"UG":49,"GH":34,"RO":19,"LA":7.7,"GY":0.82,"BY":9.2,"KG":7,"SN":18,"SY":23,"KH":17,"UY":3.4,"SR":0.62,"TN":12,"BD":173,"NP":30,"TJ":10,"GR":10.4,"NI":7,"KP":26,"MW":21,"ER":3.7,"BJ":14,"HN":10.6,"LR":5.4,"BG":6.4,"CU":11,"GT":18,"IS":0.39,"KR":51.7,"HU":9.6,"PT":10.4,"JO":11.4,"RS":6.6,"AZ":10.4,"AT":9.1,"AE":10,"CZ":10.9,"PA":4.5,"SL":8.6,"IE":5.3,"GE":3.7,"LK":22,"LT":2.9,"LV":1.9,"TG":9,"HR":3.9,"BA":3.2,"CR":5.2,"SK":5.4,"DO":11.3,"EE":1.37,"DK":5.96,"NL":17.9,"CH":8.9,"BT":0.79,"TW":23.4,"GW":2.2,"MD":2.5,"BE":11.8,"LS":2.3,"AM":2.97,"AL":2.8,"SV":6.3,"SI":2.1,"FJ":0.93,"KW":4.3,"SZ":1.2,"TL":1.4,"QA":2.7,"JM":2.8,"LB":5.4,"CY":1.26,"LU":0.67,"MU":1.26,"MT":0.53,"LI":0.04,"SM":0.034,"MC":0.039};
 const COAST={"RU":37653,"CA":202080,"CN":14500,"US":19924,"BR":7491,"AU":25760,"IN":7000,"AR":4989,"DZ":998,"CD":37,"SA":2640,"MX":9330,"ID":54720,"SD":853,"LY":1770,"IR":2440,"PE":2414,"AO":1600,"ZA":2798,"CO":3208,"MR":754,"EG":2450,"TZ":1424,"NG":853,"VE":2800,"PK":1046,"NA":1572,"MZ":2470,"TR":7200,"CL":6435,"MM":1930,"SO":3025,"UA":2782,"MG":4828,"KE":536,"FR":4853,"YE":1906,"TH":3219,"ES":4964,"CM":402,"PG":5152,"SE":3218,"MA":1835,"IQ":58,"JP":29751,"DE":2389,"CG":169,"FI":1250,"VN":3444,"MY":4675,"NO":25148,"CI":515,"PL":440,"OM":2092,"IT":7600,"PH":36289,"EC":2237,"NZ":15134,"GA":885,"GN":320,"GB":12429,"GH":539,"RO":225,"GY":459,"SN":531,"SY":193,"KH":443,"UY":660,"SR":386,"TN":1148,"BD":580,"GR":13676,"NI":910,"KP":2495,"ER":2234,"BJ":121,"HN":820,"LR":579,"BG":354,"CU":3735,"GT":400,"IS":4970,"KR":2413,"PT":1793,"JO":26,"AE":1318,"PA":2490,"SL":402,"IE":1448,"GE":310,"LK":1340,"LT":90,"LV":498,"TG":56,"HR":5835,"BA":20,"CR":1290,"DO":1288,"EE":3794,"DK":7314,"NL":451,"TW":1566,"GW":350,"BE":67,"AL":362,"SV":307,"SI":47,"FJ":1129,"KW":499,"TL":706,"QA":563,"JM":1022,"LB":225,"CY":648,"MU":177,"MT":197,"MC":4};
 const DATA=[
@@ -148,7 +55,9 @@ const DATA=[
 ].map(([code,name,area])=>({name,area,pop:(POP[code]||0)*1e6,coast:COAST[code]||0,
   flag:[...code].map(c=>String.fromCodePoint(127397+c.charCodeAt(0))).join("")}));
 DATA.forEach(c=>c.dens=c.pop/c.area);
-const ROUNDS=20,MAXRATIO=1.5;
+const ROUNDS=20,MAXRATIO=1.75;
+const VERSION="14";
+document.getElementById("ver").textContent="v"+VERSION;
 // Catégories qui alternent : superficie, population, longueur des côtes, densité
 const CATS=[
   {key:"area",q:"Quel pays a la plus grande superficie ?",fmt:n=>n.toLocaleString("fr-FR",{maximumFractionDigits:0})+" km²"},
@@ -157,18 +66,14 @@ const CATS=[
   {key:"dens",q:"Quel pays est le plus densément peuplé ?",fmt:n=>n.toLocaleString("fr-FR",{maximumFractionDigits:n<10?1:0})+" hab./km²"}
 ];
 const val=(c,cat)=>c[CATS[cat].key];
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const app=document.getElementById("app");
-let db=null,uid=null,game=null,players={},ready=false;
-let name="";try{name=localStorage.getItem("duel-name")||""}catch(e){}
-let selected=null,selRound=-1,busy=false;
 
 function makeRounds(){
   const used=new Set(),out=[];
   for(let k=0;k<ROUNDS;k++){
     const cat=k%CATS.length;
     const pool=DATA.map((c,i)=>i).filter(i=>!used.has(i)&&val(DATA[i],cat)>0);
-    // Écart maximal : le plus grand des deux vaut au plus 1,5 fois le plus petit
+    // Écart maximal : le plus grand des deux vaut au plus 1,75 fois le plus petit
     const close=(i,j)=>{const a=val(DATA[i],cat),b=val(DATA[j],cat);return a!==b&&Math.max(a,b)<=MAXRATIO*Math.min(a,b)};
     let i,j;
     for(const c of pool.sort(()=>Math.random()-.5)){
@@ -179,158 +84,56 @@ function makeRounds(){
   }
   return out;
 }
-const bigger=k=>{const[i,j,cat]=game.rounds[k];return val(DATA[i],cat)>val(DATA[j],cat)?0:1};
 
-function gamePlayers(){
-  if(!game)return[];
-  return Object.entries(players).filter(([,p])=>p.gameId===game.gameId)
-    .sort((a,b)=>(a[1].joinedAt-b[1].joinedAt)||(a[0]<b[0]?-1:1)).slice(0,2);
-}
+// État de la partie : manches tirées par l'hôte, réponses et avancement de chaque joueur
+let rounds=null,me=null,op=null,selected=null,selRound=-1;
+const fresh=()=>({answers:{},ack:0});
+const bigger=k=>{const[i,j,cat]=rounds[k];return val(DATA[i],cat)>val(DATA[j],cat)?0:1};
 function scoreOf(p,o){
   let s=0;
-  for(let k=0;k<ROUNDS;k++){
-    const x=p.answers&&p.answers[k],y=o.answers&&o.answers[k];
-    if(x!==undefined&&y!==undefined&&x===bigger(k))s++;
-  }
+  for(let k=0;k<ROUNDS;k++){const x=p.answers[k],y=o.answers[k];if(x!==undefined&&y!==undefined&&x===bigger(k))s++}
   return s;
 }
+const duo=createDuo({key:"duel-v14",onChange:render,
+  onStart(){rounds=makeRounds();me=fresh();op=fresh();duo.send({start:true,rounds})},
+  onMessage(m){
+    if(m.start){rounds=m.rounds;me=fresh();op=fresh()}
+    if(m.a)op.answers[m.a[0]]=m.a[1];
+    if(m.ack!==undefined)op.ack=m.ack;
+  }});
+function validate(r){if(selected===null)return;me.answers[r]=selected;duo.send({a:[r,selected]});render()}
+function next(r){me.ack=r+1;duo.send({ack:r+1});render()}
 
-const SLOTS=20,PREFIX="geo-duel-pays-v1-";
-// Réseau : Firebase Realtime Database (même projet que mk8-random), connexion anonyme.
-const VERSION="13";
-document.getElementById("ver").textContent="v"+VERSION;
-const myId=Math.random().toString(36).slice(2,10);
-uid=myId;
-let isHost=false,closed=false,connected=false,topic=null,lobbySrc=null,gameSrc=null;
-let waiters={},seq=0,lastSeq={},status="",candidate=null,candSince=0,helloTimer=null,waitTimer=null,pairTimer=null;
-let fdb=null;
-// Erreur réseau ou règles Firebase : affichée à l'écran pour pouvoir diagnostiquer
-function netError(e){
-  console.error(e);
-  const msg=String((e&&(e.code||e.message))||e);
-  setStatus(/permission/i.test(msg)?"Accès refusé par la base Firebase (règles « duel » à ajouter)":"Erreur : "+msg);
-}
-const gameRef=()=>ref(fdb,"duel/games/"+topic);
-function setStatus(t){status=t;if(ready&&!connected)render()}
-const send=(m,kind)=>{m.f=myId;if(kind)m.s=++seq,m.k=kind;push(gameRef(),m).catch(netError)};
-function putPlayer(d){players[uid]=d;send({p:{id:uid,d}},"p");render()}
-function newPlayer(n){return{gameId:game.gameId,name:n,answers:{},ack:0,joinedAt:Date.now()}}
-function startGame(){
-  if(!isHost){send({restart:true});return}
-  game={gameId:Date.now().toString(36)+Math.random().toString(36).slice(2,6),host:uid,rounds:makeRounds()};
-  players={};send({g:game},"g");
-  putPlayer(newPlayer("Joueur 1"));
-}
-function validate(r){
-  if(selected===null)return;
-  const m=players[uid];putPlayer({...m,answers:{...m.answers,[r]:selected}});
-}
-function next(r){putPlayer({...players[uid],ack:r+1})}
-function onMsg(m){
-  if(m.g){game=m.g;if(!isHost)putPlayer(newPlayer("Joueur 2"))}
-  if(m.p)players[m.p.id]=m.p.d;
-  if(m.restart&&isHost)startGame();
-  render();
-}
-
-// --- Salon : les joueurs en attente s'annoncent, ils sont appariés par ordre d'identifiant ---
-let srvOff=0;
-const live=()=>{const now=Date.now()-srvOff;return Object.keys(waiters).filter(id=>now-waiters[id]<13000).concat(myId).sort()};
-function lobbyStart(){
-  clearInterval(waitTimer);clearInterval(pairTimer);clearInterval(helloTimer);
-  if(gameSrc){gameSrc.close();gameSrc=null}
-  if(lobbySrc)lobbySrc.close();
-  waiters={};candidate=null;topic=null;connected=false;
-  setStatus("Recherche d'un adversaire…");
-  const me=ref(fdb,"duel/lobby/"+myId);
-  onDisconnect(me).remove();
-  const unsub=onValue(ref(fdb,"duel/lobby"),snap=>{
-    const v=snap.val()||{};waiters={};
-    Object.keys(v).forEach(id=>{if(id!==myId&&v[id]&&v[id].t)waiters[id]=v[id].t});
-  },netError);
-  lobbySrc={close:unsub};
-  const announce=()=>set(me,{t:serverTimestamp()}).catch(netError);
-  announce();waitTimer=setInterval(announce,5000);
-  pairTimer=setInterval(tryPair,1000);
-  ready=true;render();
-}
-function tryPair(){
-  const l=live(),i=l.indexOf(myId),pid=l[i^1];
-  if(l.length>1&&!pid){render();return}
-  if(!pid){candidate=null;render();return}
-  if(pid!==candidate){candidate=pid;candSince=Date.now()}
-  render();
-  if(Date.now()-candSince>=2500)pairWith(pid);
-}
-function pairWith(pid){
-  clearInterval(waitTimer);clearInterval(pairTimer);
-  if(lobbySrc){lobbySrc.close();lobbySrc=null}
-  isHost=myId<pid;
-  topic=[myId,pid].sort().join("-");
-  setStatus("Adversaire trouvé, connexion…");
-  const t0=Date.now();
-  gameSrc={close:onChildAdded(gameRef(),snap=>gotGame(snap.val()))};
-  const hello=()=>{
-    if(connected)return;
-    if(Date.now()-t0>12000){lobbyStart();return}
-    send({t:"hello"});
-  };
-  hello();helloTimer=setInterval(hello,2500);
-}
-function gotGame(m){
-  if(m.f===myId)return;
-  if(m.t==="hello"){
-    if(!connected){connected=true;clearInterval(helloTimer);send({t:"hello"});setStatus("Connecté");if(isHost)startGame();render()}
-    return;
-  }
-  if(m.t==="bye"){closed=true;render();return}
-  if(m.k){const key=m.k+m.f;if(m.s<=(lastSeq[key]||0))return;lastSeq[key]=m.s}
-  // Firebase supprime les objets vides et transforme {0:..,1:..} en tableau : on remet les réponses en forme
-  if(m.p&&m.p.d){const a={},src=m.p.d.answers||{};Object.keys(src).forEach(k=>{if(src[k]!=null)a[k]=src[k]});m.p.d.answers=a}
-  onMsg(m);
-}
-addEventListener("pagehide",()=>{if(topic&&connected)send({t:"bye"})});
-function fatal(t){ready=true;app.innerHTML='<h1>Duel des pays</h1><div class="panel"><p>'+t+'</p><div class="row"><button onclick="location.reload()">Réessayer</button></div></div>'}
-function fail(e){console.error(e);alert_("Une erreur est survenue. Réessaie.")}
-function alert_(msg){
-  const d=document.createElement("div");d.className="panel";d.setAttribute("role","alert");d.textContent=msg;
-  app.prepend(d);setTimeout(()=>d.remove(),6000);
-}
-
-function scoreBar(me,o,meScore,oScore,center){
+function scoreBar(meScore,oScore,center){
   return `<div class="score">
-    <div class="sc a"><div class="n">Toi</div><div class="v">${meScore}</div></div>
+    <div class="sc a"><div class="n">${esc(duo.me.name||"Toi")}</div><div class="v">${meScore}</div></div>
     <div class="mid">${center}</div>
-    <div class="sc b"><div class="n">${esc(o.name)}</div><div class="v">${oScore}</div></div></div>`;
+    <div class="sc b"><div class="n">${esc(duo.oppName())}</div><div class="v">${oScore}</div></div></div>`;
 }
 
 function render(){
-  if(!ready)return;
-  const gp=gamePlayers();
-  const me=gp.find(([id])=>id===uid);
-  let h="<h1>Duel des pays</h1>";
-  if(closed){
-    h+=`<div class="panel"><h2>Ton adversaire a quitté la partie</h2><div class="row"><button id="again">Nouvelle partie</button></div></div>`;
-  }else if(gp.length<2){
-    h+=`<div class="panel"><div class="big">${Math.min(live().length,2)} / 2</div>
-      <h2 style="text-align:center">${live().length>1?"Adversaire trouvé !":"En attente d'un adversaire…"}</h2>
-      <p class="mute" style="text-align:center"><span style="display:block;font-size:.85rem;margin-bottom:6px">${esc(status)}</span>Dès qu'un deuxième joueur arrive sur cette page, la partie démarre toute seule. 20 manches qui alternent superficie, population, côtes et densité. 1 point par bonne réponse.</p></div>`;
+  const focused=document.activeElement&&document.activeElement.id==="nm";
+  let h=`<a class="back" href="../">← Menu</a><h1>Duel des pays</h1>`;
+  const common=commonScreen(duo,{intro:"Dès qu'un deuxième joueur arrive sur cette page, vous choisissez vos prénoms puis la partie démarre. 20 manches qui alternent superficie, population, côtes et densité. 1 point par bonne réponse."});
+  if(common!==null||!rounds){
+    h+=common||"";
   }else{
-    const oe=gp.find(([id])=>id!==uid),mp=me[1],op=oe[1];
-    const r=Math.min(mp.ack,op.ack);
-    const ms=scoreOf(mp,op),os=scoreOf(op,mp);
-    if(r>=ROUNDS){
-      const res=ms>os?"Tu as gagné 🏆":ms<os?esc(op.name)+" a gagné":"Égalité";
-      h+=scoreBar(mp,op,ms,os,"Fin")+`<div class="panel"><div class="big">${res}</div>
-        <p class="mute" style="text-align:center">${ms} point${ms>1?"s":""} contre ${os} sur ${ROUNDS} manches.</p>
-        <div class="row" style="justify-content:center"><button id="start">Rejouer</button></div></div>`;
+    const opn=esc(duo.oppName());
+    const r=Math.min(me.ack,op.ack);
+    const ms=scoreOf(me,op),os=scoreOf(op,me);
+    if(duo.forfeit||r>=ROUNDS){
+      const res=duo.forfeit==="me"?"Tu as abandonné. "+opn+" gagne":duo.forfeit==="opp"?opn+" a abandonné. Tu gagnes 🏆"
+        :ms>os?"Tu as gagné 🏆":ms<os?opn+" a gagné":"Égalité";
+      h+=scoreBar(ms,os,"Fin")+`<div class="panel"><div class="big" style="font-size:clamp(2rem,9vw,3rem)">${res}</div>
+        <p class="mute" style="text-align:center">${ms} point${ms>1?"s":""} contre ${os}${duo.forfeit?"":" sur "+ROUNDS+" manches"}.</p>
+        <div class="row" style="justify-content:center"><button id="again">Rejouer</button></div></div>`;
     }else{
       if(selRound!==r){selected=null;selRound=r}
-      const[i,j,cat]=game.rounds[r],c=[DATA[i],DATA[j]];
-      const mine=mp.answers[r],theirs=op.answers[r];
+      const[i,j,cat]=rounds[r],c=[DATA[i],DATA[j]];
+      const mine=me.answers[r],theirs=op.answers[r];
       const reveal=mine!==undefined&&theirs!==undefined;
       const best=bigger(r);
-      h+=scoreBar(mp,op,ms,os,`Manche<b>${r+1}/${ROUNDS}</b>`);
+      h+=scoreBar(ms,os,`Manche<b>${r+1}/${ROUNDS}</b>`);
       h+=`<h2 class="q">${CATS[cat].q}</h2><div class="duel">`;
       c.forEach((cn,k)=>{
         let cls="card",tag="";
@@ -338,7 +141,7 @@ function render(){
           cls+=k===best?" good":" bad";
           const t=[];
           if(mine===k)t.push('<span class="tag a">Toi</span>');
-          if(theirs===k)t.push(`<span class="tag b">${esc(op.name)}</span>`);
+          if(theirs===k)t.push(`<span class="tag b">${opn}</span>`);
           tag=t.join("");
         }else if(mine!==undefined){if(mine===k)cls+=" sel"}
         else if(selected===k)cls+=" sel";
@@ -349,40 +152,30 @@ function render(){
       h+="</div>";
       if(reveal){
         const v=(who,pick)=>`<div class="vd ${pick===best?"ok":"ko"}">${who} : ${pick===best?"+1 point":"0 point"}</div>`;
-        h+=`<div class="verdict">${v("Toi",mine)}${v(esc(op.name),theirs)}</div>`;
-        const acked=mp.ack>r;
-        h+=`<div class="row"><button id="next"${acked?" disabled":""}>${acked?"En attente de "+esc(op.name)+"…":(r===ROUNDS-1?"Voir le résultat":"Manche suivante")}</button></div>`;
+        h+=`<div class="verdict">${v("Toi",mine)}${v(opn,theirs)}</div>`;
+        const acked=me.ack>r;
+        h+=`<div class="row"><button id="next"${acked?" disabled":""}>${acked?"En attente de "+opn+"…":(r===ROUNDS-1?"Voir le résultat":"Manche suivante")}</button></div>`;
       }else if(mine!==undefined){
-        h+=`<p class="mute">Choix validé. En attente de ${esc(op.name)}…</p>`;
+        h+=`<p class="mute">Choix validé. En attente de ${opn}…</p>`;
       }else{
         h+=`<div class="row"><button id="ok"${selected===null?" disabled":""}>Valider mon choix</button></div>`;
       }
+      h+=`<div class="row" style="justify-content:center"><button class="giveup" id="giveup">Abandonner</button></div>`;
+      app.dataset.r=r;
     }
   }
   app.innerHTML=h;
+  bindCommon(duo,app);
+  if(focused){const nm=document.getElementById("nm");if(nm&&!nm.disabled){nm.focus();nm.setSelectionRange(nm.value.length,nm.value.length)}}
   const $=id=>document.getElementById(id);
-  if($("start"))$("start").onclick=startGame;
-  if($("again"))$("again").onclick=()=>location.reload();
-  if(me&&gp.length===2){
-    const r=Math.min(me[1].ack,gp.find(([id])=>id!==uid)[1].ack);
-    app.querySelectorAll(".duel button").forEach(b=>b.onclick=()=>{selected=+b.dataset.k;render()});
-    if($("ok"))$("ok").onclick=()=>validate(r);
-    if($("next"))$("next").onclick=()=>next(r);
-  }
+  const r=+app.dataset.r;
+  app.querySelectorAll(".duel button").forEach(b=>b.onclick=()=>{selected=+b.dataset.k;render()});
+  if($("ok"))$("ok").onclick=()=>validate(r);
+  if($("next"))$("next").onclick=()=>next(r);
+  if($("giveup"))$("giveup").onclick=()=>{if(confirm("Abandonner la partie ? Ton adversaire gagnera."))duo.giveUp()};
+  if($("again"))$("again").onclick=()=>{rounds=null;duo.toRoom()};
 }
-
-(async function boot(){
-  try{
-    const app=initializeApp(FIREBASE_CONFIG,"duel");
-    fdb=getDatabase(app);
-    await signInAnonymously(getAuth(app));
-    onValue(ref(fdb,".info/serverTimeOffset"),snap=>{srvOff=-(snap.val()||0)});
-  }catch(e){
-    console.error(e);
-    fatal("Connexion au serveur impossible ("+((e&&(e.code||e.message))||"erreur")+").");
-    return;
-  }
-  lobbyStart();
-})();
+render();
+duo.start();
 </script>
 </html>
