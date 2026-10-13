@@ -3,7 +3,7 @@
 // ne changent pas le bon ordre. Le classement se fait toujours de la plus grande valeur à la plus petite.
 export const flag=code=>[...code].map(c=>String.fromCodePoint(127397+c.charCodeAt(0))).join("");
 
-const ALTITUDE=[
+export const ALTITUDE=[
 ["NP","Népal",8849],["PK","Pakistan",8611],["IN","Inde",8586],["BT","Bhoutan",7570],["TJ","Tadjikistan",7495],
 ["AF","Afghanistan",7492],["KG","Kirghizistan",7439],["KZ","Kazakhstan",7010],["AR","Argentine",6961],["CL","Chili",6893],
 ["PE","Pérou",6768],["BO","Bolivie",6520],["EC","Équateur",6263],["US","États-Unis",6190],["CA","Canada",5959],

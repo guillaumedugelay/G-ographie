@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="fr"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Jeu solo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&display=swap">
+<link rel="stylesheet" href="../css/jeux.css">
+</head><body>
+<div id="ver"></div>
+<main id="app"></main>
+<script type="module">
+import{ALTITUDE,flag}from"../js/classements.js";
+import{BONHEUR,ALCOOL}from"../js/solo-data.js";
+
+const VERSION="16";
+document.getElementById("ver").textContent="v"+VERSION;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fr=(n,d=0)=>n.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d});
+// Un jeu solo : deux pays, on choisit celui qui a la plus grande valeur. Une erreur termine la série.
+const JEUX={
+  altitude:{titre:"Le plus haut sommet",ico:"🏔️",q:"Quel pays a le point culminant le plus haut ?",data:ALTITUDE,fmt:v=>fr(v)+" m"},
+  bonheur:{titre:"Le plus heureux",ico:"😊",q:"Quel pays est le plus heureux ?",data:BONHEUR,fmt:v=>fr(v,2)+" / 10",
+    source:"World Happiness Report 2024, note sur 10"},
+  alcool:{titre:"Qui boit le plus ?",ico:"🍷",q:"Dans quel pays boit-on le plus d'alcool ?",data:ALCOOL,fmt:v=>fr(v,1)+" L / an",
+    source:"OMS : litres d'alcool pur par habitant de 15 ans et plus et par an"},
+};
+const key=new URLSearchParams(location.search).get("jeu")||"altitude";
+const JEU=JEUX[key]||JEUX.altitude;
+document.title=JEU.titre;
+const DATA=JEU.data.map(([code,name,v])=>({name,v,flag:flag(code)}));
+const app=document.getElementById("app");
+
+let best=0;try{best=+localStorage.getItem("solo-best-"+key)||0}catch(e){}
+let score=0,kept=null,pair=[],picked=null,lastScore=0;
+const rand=()=>DATA[Math.floor(Math.random()*DATA.length)];
+// Un autre pays, avec une valeur différente (sinon il n'y aurait pas de bonne réponse)
+function other(c){let o;do{o=rand()}while(o===c||o.v===c.v);return o}
+
+function newRound(){
+  if(kept){pair=[kept,other(kept)];if(Math.random()<.5)pair.reverse()}
+  else{const a=rand();pair=[a,other(a)]}
+  picked=null;render();
+}
+function answer(i){
+  if(picked!==null)return;
+  picked=i;
+  const good=pair[0].v>pair[1].v?0:1;
+  if(i===good){
+    score++;
+    if(score>best){best=score;try{localStorage.setItem("solo-best-"+key,best)}catch(e){}}
+    kept=pair[Math.random()<.5?0:1];
+  }else{lastScore=score;score=0;kept=null}
+  render();
+}
+
+function render(){
+  const good=pair[0].v>pair[1].v?0:1,done=picked!==null,won=done&&picked===good;
+  let h=`<a class="back" href="../">← Menu</a><h1>${JEU.ico} ${esc(JEU.titre)}</h1>
+    <div class="score"><div class="sc a"><div class="n">Série</div><div class="v">${score}</div></div>
+    <div class="mid">Solo</div><div class="sc b"><div class="n">Record</div><div class="v">${best}</div></div></div>
+    <h2 class="q">${esc(JEU.q)}</h2><div class="duel">`;
+  pair.forEach((c,k)=>{
+    let cls="card";
+    if(done)cls+=k===good?" good":k===picked?" bad sel":" bad";
+    h+=`<button class="${cls}" data-k="${k}"${done?" disabled":""}><div class="flag">${c.flag}</div><div class="name">${esc(c.name)}</div>
+      <div class="area">${done?JEU.fmt(c.v):"?"}</div></button>`;
+  });
+  h+="</div>";
+  if(done){
+    h+=won?`<div class="verdict"><div class="vd ok">✅ Bravo ! On garde ${esc(kept.name)}.</div></div>
+      <div class="row"><button id="next">Suivant →</button></div>`
+      :`<div class="verdict"><div class="vd ko">❌ Raté ! C'était ${esc(pair[good].name)}. Série finale : ${lastScore}</div></div>
+      <div class="row"><button id="next">Rejouer</button></div>`;
+  }
+  if(JEU.source)h+=`<p class="hint" style="font-size:.85rem">${esc(JEU.source)}. Valeurs approximatives.</p>`;
+  app.innerHTML=h;
+  app.querySelectorAll(".duel button").forEach(b=>b.onclick=()=>answer(+b.dataset.k));
+  const n=document.getElementById("next");if(n){n.onclick=newRound;n.focus()}
+}
+document.addEventListener("keydown",e=>{if(e.key==="ArrowLeft")answer(0);else if(e.key==="ArrowRight")answer(1)});
+newRound();
+</script>
+</body></html>
