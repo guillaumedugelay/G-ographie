@@ -8,6 +8,7 @@
   --violet:#7C3AED; --gold:#F59E0B; --gold-edge:#B45309; --on-gold:#0F172A;
   --ok:#15803D; --ok-bg:#DCFCE7; --ko:#DC2626; --ko-bg:#FEE2E2;
   --blob1:rgba(37,99,235,.18); --blob2:rgba(124,58,237,.14);
+  --sea:#BFDBFE; --landc:#F8FAFC;
   --display:"Russo One",system-ui,sans-serif; --body:"Chakra Petch",system-ui,sans-serif;
   color-scheme:light;
 }
@@ -18,6 +19,7 @@
   --violet:#A78BFA; --gold:#FBBF24; --gold-edge:#B45309;
   --ok:#4ADE80; --ok-bg:#0F2E1D; --ko:#F87171; --ko-bg:#3A1418;
   --blob1:rgba(96,165,250,.16); --blob2:rgba(167,139,250,.12);
+  --sea:#0E2A4F; --landc:#2B3B5C;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0B1220; --panel:#131D35; --ink:#E2E8F0; --mute:#A3B1C6; --line:#2A3A5E; --edge:#050A16;
@@ -26,6 +28,7 @@
   --violet:#A78BFA; --gold:#FBBF24; --gold-edge:#B45309;
   --ok:#4ADE80; --ok-bg:#0F2E1D; --ko:#F87171; --ko-bg:#3A1418;
   --blob1:rgba(96,165,250,.16); --blob2:rgba(167,139,250,.12);
+  --sea:#0E2A4F; --landc:#2B3B5C;
   color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -145,6 +148,26 @@ button.card:disabled{opacity:1;cursor:default}
 .rk .handle{flex:none;display:flex;align-items:center;justify-content:center;width:48px;height:48px;margin:-6px -8px -6px 0;
   color:var(--mute);touch-action:none;cursor:grab;border-radius:12px}
 .rk .handle .ic{width:26px;height:26px}
+
+/* Jeu de la carte */
+.sc .v small{font-size:.5em;color:var(--mute)}
+.target-name{display:flex;align-items:center;justify-content:center;gap:12px;font-family:var(--display);font-size:clamp(1.6rem,7vw,2.2rem);
+  line-height:1.15;text-align:center;text-wrap:balance}
+.target-name .fl{font-size:1.6em;line-height:1}
+.mapbox{position:relative;border:2px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 5px 0 var(--line);
+  margin-inline:-6px;background:var(--sea)}
+#map{display:block;width:100%;aspect-ratio:1/.6;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none}
+#map .sea{fill:var(--sea)}
+#map .land path{fill:var(--landc);stroke:var(--sea);stroke-width:.6;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+#map .pick{fill:var(--p1);stroke:var(--p1-edge);stroke-width:1.5;vector-effect:non-scaling-stroke}
+#map .pick-ko{fill:var(--ko);stroke:var(--ko);stroke-width:1.5;vector-effect:non-scaling-stroke}
+#map .target{fill:var(--ok);stroke:var(--ok);stroke-width:2;vector-effect:non-scaling-stroke}
+#map .link{stroke:var(--ink);stroke-width:2.5;stroke-dasharray:6 5;vector-effect:non-scaling-stroke}
+#map .dot-g{fill:var(--ko);stroke:#fff;stroke-width:1.5;vector-effect:non-scaling-stroke}
+#map .dot-t{fill:var(--ok);stroke:#fff;stroke-width:1.5;vector-effect:non-scaling-stroke}
+.zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:8px}
+.zoom button{width:48px;min-height:48px;padding:0;font-size:1.6rem;line-height:1;box-shadow:0 3px 0 var(--line)}
+.rk .pts{font-family:var(--display);font-size:1.2rem;color:var(--p1);font-variant-numeric:tabular-nums}
 
 /* Animations réduites si le téléphone le demande */
 @media (prefers-reduced-motion:reduce){

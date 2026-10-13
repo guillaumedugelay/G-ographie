@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="fr"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Où est ce pays ?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Russo+One&display=swap">
+<link rel="stylesheet" href="../css/jeux.css">
+</head><body>
+<div id="ver"></div>
+<main id="app"></main>
+<script type="module">
+import{MONDE}from"../js/monde.js";
+import{SUPERFICIE}from"../js/solo-data.js";
+import{flag}from"../js/classements.js";
+import{icon,backLink}from"../js/icons.js";
+
+const VERSION="19";
+document.getElementById("ver").textContent="v"+VERSION;
+const ROUNDS=10,MAXPTS=5000;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fr=n=>Math.round(n).toLocaleString("fr-FR");
+
+// Pays de la carte : nom court français si on l'a, sinon celui de la norme ISO
+const SHORT=new Map(SUPERFICIE.map(([c,n])=>[c,n]));
+const FIX={"N. Cyprus":"Chypre du Nord","Somaliland":"Somaliland","Kosovo":"Kosovo"};
+const PAYS=MONDE.map(([code,name,rings],i)=>{
+  let x0=999,x1=-999,y0=999,y1=-999;
+  for(const r of rings)for(let k=0;k<r.length;k+=2){x0=Math.min(x0,r[k]);x1=Math.max(x1,r[k]);y0=Math.min(y0,r[k+1]);y1=Math.max(y1,r[k+1])}
+  return{i,code,name:SHORT.get(code)||FIX[name]||name,flag:code?flag(code):"🏳️",rings,box:[x0,x1,y0,y1]};
+});
+// Pays à trouver : ceux de la liste française présents sur la carte
+const POOL=PAYS.filter(p=>p.code&&SHORT.has(p.code));
+
+// --- Géométrie sur la sphère : la Terre est ronde ---
+const R=6371,rad=d=>d*Math.PI/180;
+// Distance du grand cercle (haversine) : « tout à droite » de la carte rejoint « tout à gauche »
+function haversine(lon1,lat1,lon2,lat2){
+  const dl=rad(lat2-lat1),dn=rad(lon2-lon1);
+  const a=Math.sin(dl/2)**2+Math.cos(rad(lat1))*Math.cos(rad(lat2))*Math.sin(dn/2)**2;
+  return 2*R*Math.asin(Math.min(1,Math.sqrt(a)));
+}
+// Ramène une longitude à moins de 180° de la référence (pour comparer à travers l'antiméridien)
+const near=(lon,ref)=>lon+360*Math.round((ref-lon)/360);
+const wrap=lon=>((lon+540)%360)-180;
+// Le point est-il dans ce pays ? (pair-impair sur tous les contours, trous compris)
+function inside(p,lon,lat){
+  const[x0,x1,y0,y1]=p.box;if(lat<y0||lat>y1)return false;
+  // Les contours rendus continus peuvent dépasser ±180° : on teste aussi la longitude décalée d'un tour
+  for(const sh of[0,360,-360])if(lon+sh>=x0-.01&&lon+sh<=x1+.01&&insideAt(p,lon+sh,lat))return true;
+  return false;
+}
+function insideAt(p,lon,lat){
+  let c=false;
+  for(const r of p.rings)for(let i=0,j=r.length-2;i<r.length;j=i,i+=2){
+    const xi=r[i],yi=r[i+1],xj=r[j],yj=r[j+1];
+    if((yi>lat)!==(yj>lat)&&lon<(xj-xi)*(lat-yi)/(yj-yi)+xi)c=!c;
+  }
+  return c;
+}
+const countryAt=(lon,lat)=>PAYS.find(p=>inside(p,lon,lat))||null;
+// Point de la frontière de p le plus proche de (lon,lat) : projection sur chaque segment, puis distance réelle
+function closest(p,lon,lat){
+  const k=Math.cos(rad(lat));let best={d:Infinity,lon:0,lat:0};
+  for(const r of p.rings)for(let i=0;i+3<r.length;i+=2){
+    const ax=near(r[i],lon),ay=r[i+1],bx=near(r[i+2],ax),by=r[i+3];
+    const ux=(bx-ax)*k,uy=by-ay,px=(lon-ax)*k,py=lat-ay,l2=ux*ux+uy*uy;
+    const t=l2?Math.max(0,Math.min(1,(px*ux+py*uy)/l2)):0;
+    const qx=ax+(bx-ax)*t,qy=ay+uy*t,d=haversine(lon,lat,qx,qy);
+    if(d<best.d)best={d,lon:qx,lat:qy};
+  }
+  return best;
+}
+// Distance entre les frontières les plus proches de deux pays (0 s'ils se touchent)
+function borderGap(a,b){
+  let best={d:Infinity};
+  for(const[from,to]of[[a,b],[b,a]])
+    for(const r of from.rings)for(let i=0;i<r.length;i+=2){
+      const c=closest(to,r[i],r[i+1]);
+      if(c.d<best.d)best=from===a?{d:c.d,a:{lon:r[i],lat:r[i+1]},b:{lon:c.lon,lat:c.lat}}:{d:c.d,a:{lon:c.lon,lat:c.lat},b:{lon:r[i],lat:r[i+1]}};
+    }
+  if(best.d<15)best.d=0;   // tracés simplifiés : deux voisins peuvent ne pas se toucher exactement
+  return best;
+}
+// Points : 5 000 pour le bon pays ; sinon jusqu'à 4 000 pour un voisin, puis décroissance avec la distance
+const MAXWRONG=4000;
+const points=(ok,d)=>ok?MAXPTS:Math.round(MAXWRONG*Math.exp(-d/1500));
+
+// --- Carte : projection équirectangulaire (x = longitude, y = -latitude), dessinée 3 fois côte à côte ---
+const pathOf=rings=>rings.map(r=>{let s="M"+r[0]+","+(-r[1]);for(let i=2;i<r.length;i+=2)s+="L"+r[i]+","+(-r[i+1]);return s+"Z"}).join("");
+const LAND=PAYS.map(p=>`<path d="${pathOf(p.rings)}"/>`).join("");
+const YMIN=-84,YMAX=60,RATIO=.6;    // de 84° N à 60° S
+const WMAX=(YMAX-YMIN)/RATIO;          // dézoom maximal : la hauteur du monde remplit le cadre
+const HOME=()=>({x:12-WMAX/2,y:YMIN,w:WMAX});   // vue de départ, centrée sur l'Europe et l'Afrique
+let vb=HOME();
+
+// --- Partie ---
+let best=0;try{best=+localStorage.getItem("carte-best")||0}catch(e){}
+let rounds=[],r=0,sel=null,result=null,missTap=false;
+function newGame(){
+  rounds=[...POOL].sort(()=>Math.random()-.5).slice(0,ROUNDS).map(p=>({p,sel:null,d:null,pts:0}));
+  r=0;startRound();
+}
+function startRound(){sel=null;result=null;missTap=false;vb=HOME();render()}
+function validate(){
+  if(!sel)return;
+  const t=rounds[r].p,ok=sel===t;
+  result=ok?{ok,d:0}:{ok,...borderGap(sel,t)};
+  Object.assign(rounds[r],{sel,d:result.d,pts:points(ok,result.d)});
+  // Cadre la vue sur les deux pays, par le chemin le plus court
+  const boxes=[t.box,sel.box],cx=(t.box[0]+t.box[1])/2;
+  let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
+  for(const b of boxes){const sh=near((b[0]+b[1])/2,cx)-(b[0]+b[1])/2;x0=Math.min(x0,b[0]+sh);x1=Math.max(x1,b[1]+sh);y0=Math.min(y0,-b[3]);y1=Math.max(y1,-b[2])}
+  const w=Math.min(WMAX,Math.max(30,(x1-x0)*1.3,(y1-y0)*1.3/RATIO));
+  vb={x:(x0+x1)/2-w/2,y:(y0+y1)/2-w*RATIO/2,w};clampView();
+  if(r===ROUNDS-1){const tot=total();if(tot>best){best=tot;try{localStorage.setItem("carte-best",best)}catch(e){}}}
+  render();
+}
+const total=()=>rounds.reduce((s,x)=>s+x.pts,0);
+function next(){if(r<ROUNDS-1){r++;startRound()}else{r=ROUNDS;render()}}
+
+function clampView(){
+  vb.w=Math.max(8,Math.min(WMAX,vb.w));
+  const h=vb.w*RATIO;
+  vb.y=h>=YMAX-YMIN?(YMIN+YMAX)/2-h/2:Math.max(YMIN,Math.min(YMAX-h,vb.y));
+  // Horizontalement, la carte est infinie : on recentre sur la copie du milieu
+  vb.x=((vb.x+vb.w/2+540)%360)-180-vb.w/2;
+}
+
+function mapSVG(){
+  const h=vb.w*RATIO,s=vb.w/360;
+  let marks="";
+  if(sel)marks+=`<path class="${result&&!result.ok?"pick-ko":"pick"}" d="${pathOf(sel.rings)}"/>`;
+  if(result){
+    const t=rounds[r].p;
+    marks+=`<path class="target" d="${pathOf(t.rings)}"/>`;
+    if(!result.ok&&result.d>0){
+      const bl=near(result.b.lon,result.a.lon);
+      marks+=`<line class="link" x1="${result.a.lon}" y1="${-result.a.lat}" x2="${bl}" y2="${-result.b.lat}"/>
+        <circle class="dot-g" cx="${result.a.lon}" cy="${-result.a.lat}" r="${4*s}"/><circle class="dot-t" cx="${bl}" cy="${-result.b.lat}" r="${4*s}"/>`;
+    }
+  }
+  return `<svg id="map" viewBox="${vb.x} ${vb.y} ${vb.w} ${h}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Carte du monde : touche le pays demandé">
+    <defs><g id="world"><g class="land">${LAND}</g>${marks}</g></defs>
+    <rect class="sea" x="-720" y="-200" width="1440" height="400"/>
+    <use href="#world" x="-360"/><use href="#world"/><use href="#world" x="360"/>
+  </svg>`;
+}
+
+function render(){
+  const app=document.getElementById("app");
+  let h=`${backLink()}<h1>${icon("pin")}Où est ce pays ?</h1>`;
+  if(r>=ROUNDS){
+    const tot=total();
+    h+=`<div class="panel"><div class="win">${fr(tot)} points</div>
+      <p class="hint">sur ${fr(ROUNDS*MAXPTS)} · record : ${fr(best)}</p></div><div class="rank">`;
+    rounds.forEach((x,i)=>h+=`<div class="rk"><div class="pos">${i+1}</div><div class="fl">${x.p.flag}</div>
+      <div class="nm">${esc(x.p.name)}<div class="vv">${x.sel===x.p?"Trouvé !":"Tu as choisi "+esc(x.sel.name)+(x.d>0?" · "+fr(x.d)+" km":" · pays voisin")}</div></div><div class="pts">${fr(x.pts)}</div></div>`);
+    h+=`</div><div class="row"><button id="again">Rejouer</button></div>`;
+    app.innerHTML=h;document.getElementById("again").onclick=newGame;return;
+  }
+  const p=rounds[r].p;
+  h+=`<div class="score"><div class="sc a"><div class="n">Pays</div><div class="v">${r+1}<small>/${ROUNDS}</small></div></div>
+    <div class="sc b"><div class="n">Points</div><div class="v">${fr(total())}</div></div></div>
+    <div class="target-name"><span class="fl">${p.flag}</span><span>${esc(p.name)}</span></div>
+    <div class="mapbox">${mapSVG()}
+      <div class="zoom"><button class="alt" id="zin" aria-label="Zoomer">+</button><button class="alt" id="zout" aria-label="Dézoomer">−</button></div></div>`;
+  if(result){
+    const pts=rounds[r].pts;
+    h+=`<div class="verdict"><div class="vd ${result.ok?"ok":"ko"}">${result.ok?"Bravo, c'est bien "+esc(p.name)+" !":
+      "Raté : tu as choisi "+esc(sel.name)+(result.d>0?", à "+fr(result.d)+" km de sa frontière.":", un pays voisin.")} +${fr(pts)} points</div></div>
+      <div class="row"><button id="next">${r===ROUNDS-1?"Voir le résultat":"Pays suivant"}</button></div>`;
+  }else{
+    h+=`<p class="hint">${sel?`Ta réponse : <b>${esc(sel.name)}</b>`:missTap?"Touche un pays, pas la mer.":"Touche le pays sur la carte. Glisse pour te déplacer, pince ou utilise + et − pour zoomer."}</p>
+      <div class="row"><button id="ok"${sel?"":" disabled"}>Valider</button></div>`;
+  }
+  app.innerHTML=h;
+  const $=id=>document.getElementById(id);
+  if($("ok"))$("ok").onclick=validate;
+  if($("next"))$("next").onclick=next;
+  $("zin").onclick=()=>zoom(1/1.6);$("zout").onclick=()=>zoom(1.6);
+  bindMap($("map"));
+}
+function redrawMap(){const box=document.querySelector(".mapbox");if(!box)return;box.querySelector("svg").outerHTML=mapSVG();bindMap(document.getElementById("map"))}
+function zoom(f,cx,cy){
+  const h=vb.w*RATIO;if(cx===undefined){cx=vb.x+vb.w/2;cy=vb.y+h/2}
+  const nw=Math.max(8,Math.min(WMAX,vb.w*f)),k=nw/vb.w;
+  vb={x:cx-(cx-vb.x)*k,y:cy-(cy-vb.y)*k,w:nw};clampView();redrawMap();
+}
+
+// Toucher : un doigt = déplacer (ou choisir le pays si on n'a pas bougé), deux doigts = zoomer
+function bindMap(svg){
+  const pts=new Map();let start=null,pinch=null;
+  const toMap=(ex,ey)=>{const b=svg.getBoundingClientRect(),h=vb.w*RATIO;
+    // preserveAspectRatio « slice » : l'échelle est la plus grande des deux
+    const sc=Math.max(b.width/vb.w,b.height/h),ox=(b.width-vb.w*sc)/2,oy=(b.height-h*sc)/2;
+    return{x:vb.x+(ex-b.left-ox)/sc,y:vb.y+(ey-b.top-oy)/sc,sc}};
+  svg.addEventListener("pointerdown",e=>{
+    svg.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===1)start={x:e.clientX,y:e.clientY,vb:{...vb},moved:false};
+    if(pts.size===2){const[a,b]=[...pts.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),w:vb.w};if(start)start.moved=true}
+  });
+  svg.addEventListener("pointermove",e=>{
+    if(!pts.has(e.pointerId))return;
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===2&&pinch){
+      const[a,b]=[...pts.values()],m=toMap((a.x+b.x)/2,(a.y+b.y)/2),d=Math.hypot(a.x-b.x,a.y-b.y);
+      if(d>0){const nw=Math.max(8,Math.min(WMAX,pinch.w*pinch.d/d)),k=nw/vb.w;
+        vb={x:m.x-(m.x-vb.x)*k,y:m.y-(m.y-vb.y)*k,w:nw};clampView();svg.setAttribute("viewBox",`${vb.x} ${vb.y} ${vb.w} ${vb.w*RATIO}`)}
+    }else if(pts.size===1&&start){
+      const dx=e.clientX-start.x,dy=e.clientY-start.y;
+      if(Math.hypot(dx,dy)>8)start.moved=true;
+      if(start.moved){const sc=toMap(0,0).sc;vb={...start.vb,x:start.vb.x-dx/sc,y:start.vb.y-dy/sc};clampView();svg.setAttribute("viewBox",`${vb.x} ${vb.y} ${vb.w} ${vb.w*RATIO}`)}
+    }
+  });
+  const up=e=>{
+    if(!pts.has(e.pointerId))return;
+    pts.delete(e.pointerId);
+    if(pts.size<2&&pinch){pinch=null;redrawMap();return}
+    if(pts.size===0){
+      if(start&&!start.moved&&!result){
+        const m=toMap(e.clientX,e.clientY),c=countryAt(wrap(m.x),-m.y);
+        if(c){sel=c;missTap=false}else missTap=true;
+        render();
+      }else if(start&&start.moved)redrawMap();
+      start=null;
+    }
+  };
+  svg.addEventListener("pointerup",up);svg.addEventListener("pointercancel",up);
+  svg.addEventListener("wheel",e=>{e.preventDefault();const m=toMap(e.clientX,e.clientY);zoom(e.deltaY>0?1.25:.8,m.x,m.y)},{passive:false});
+}
+
+newGame();
+</script>
+</body></html>
