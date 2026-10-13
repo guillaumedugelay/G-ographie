@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Classement des pays</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Russo+One&display=swap">
 <link rel="stylesheet" href="../css/jeux.css">
 </head><body>
 <div id="ver"></div>
@@ -12,8 +12,9 @@
 <script type="module">
 import{createDuo,commonScreen,bindCommon,esc}from"../js/duo.js";
 import{JEUX,flag}from"../js/classements.js";
+import{icon,backLink}from"../js/icons.js";
 
-const VERSION="15";
+const VERSION="17";
 document.getElementById("ver").textContent="v"+VERSION;
 const jeuKey=new URLSearchParams(location.search).get("jeu")||"altitude";
 const JEU=JEUX[jeuKey]||JEUX.altitude;
@@ -95,13 +96,13 @@ function sortable(list){
 function render(){
   if(dragging)return;
   const focused=document.activeElement&&document.activeElement.id==="nm";
-  let h=`<a class="back" href="../">← Menu</a><h1>${JEU.ico} ${esc(JEU.titre)}</h1>`;
+  let h=`${backLink()}<h1>${icon(JEU.ico)}${esc(JEU.titre)}</h1>`;
   const common=commonScreen(duo,{intro:"Dès qu'un deuxième joueur arrive, vous choisissez vos prénoms puis la partie démarre. "+JEU.consigne+" Le plus juste gagne."});
   const opn=esc(duo.oppName());
   if(common!==null||!picks){
     h+=common||"";
   }else if(duo.forfeit){
-    h+=`<div class="panel"><div class="big" style="font-size:clamp(2rem,9vw,3rem)">${duo.forfeit==="me"?"Tu as abandonné. "+opn+" gagne":opn+" a abandonné. Tu gagnes 🏆"}</div>
+    h+=`<div class="panel"><div class="win">${duo.forfeit==="me"?"Tu as abandonné. "+opn+" gagne":opn+" a abandonné. Tu gagnes 🏆"}</div>
       <div class="row" style="justify-content:center"><button id="again">Rejouer</button></div></div>`;
   }else if(submitted&&theirs){
     const t=truth(),a=score(submitted),b=score(theirs);
@@ -111,7 +112,7 @@ function render(){
       <div class="sc a"><div class="n">${esc(duo.me.name||"Toi")}</div><div class="v">${a.exact}</div></div>
       <div class="mid">bien<br>placés</div>
       <div class="sc b"><div class="n">${opn}</div><div class="v">${b.exact}</div></div></div>
-      <div class="panel"><div class="big" style="font-size:clamp(2rem,9vw,3rem)">${res}</div>
+      <div class="panel"><div class="win">${res}</div>
       ${a.exact===b.exact?`<p class="mute" style="text-align:center">Égalité de pays bien placés : départagés par les paires dans le bon ordre (${a.pairs} contre ${b.pairs} sur 45).</p>`:""}</div>
       <p class="hint">Le bon classement (${esc(JEU.haut.toLowerCase())} en haut) :</p><div class="rank">`;
     t.forEach((c,i)=>{
@@ -125,10 +126,10 @@ function render(){
     h+=`<div class="panel"><h2>Classement envoyé</h2><p class="mute">En attente du classement de ${opn}…</p></div>
       <div class="row" style="justify-content:center"><button class="giveup" id="giveup">Abandonner</button></div>`;
   }else{
-    h+=`<p class="hint">${esc(JEU.consigne)}<br>Fais glisser les pays avec la poignée <b>☰</b> : <b>${esc(JEU.haut.toLowerCase())}</b> en haut, <b>${esc(JEU.bas.toLowerCase())}</b> en bas.</p>
+    h+=`<p class="hint">${esc(JEU.consigne)}<br>Fais glisser les pays par la poignée à droite : <b>${esc(JEU.haut.toLowerCase())}</b> en haut, <b>${esc(JEU.bas.toLowerCase())}</b> en bas.</p>
       <div class="rank" id="sortable">`;
     mine.forEach((c,i)=>{
-      h+=`<div class="rk drag" data-c="${c}"><div class="pos">${i+1}</div><div class="fl">${DATA[c].flag}</div><div class="nm">${esc(DATA[c].name)}</div><div class="handle" aria-label="Déplacer">☰</div></div>`;
+      h+=`<div class="rk drag" data-c="${c}"><div class="pos">${i+1}</div><div class="fl">${DATA[c].flag}</div><div class="nm">${esc(DATA[c].name)}</div><div class="handle" role="img" aria-label="Déplacer">${icon("grip")}</div></div>`;
     });
     h+=`</div><div class="row"><button id="send">Valider mon classement</button></div>
       <div class="row" style="justify-content:center"><button class="giveup" id="giveup">Abandonner</button></div>`;

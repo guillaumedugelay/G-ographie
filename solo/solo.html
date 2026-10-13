@@ -4,25 +4,27 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Jeu solo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Russo+One&display=swap">
 <link rel="stylesheet" href="../css/jeux.css">
 </head><body>
 <div id="ver"></div>
 <main id="app"></main>
 <script type="module">
 import{ALTITUDE,flag}from"../js/classements.js";
-import{BONHEUR,ALCOOL}from"../js/solo-data.js";
+import{BONHEUR,ALCOOL,SUPERFICIE}from"../js/solo-data.js";
+import{icon,backLink}from"../js/icons.js";
 
-const VERSION="16";
+const VERSION="17";
 document.getElementById("ver").textContent="v"+VERSION;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fr=(n,d=0)=>n.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d});
 // Un jeu solo : deux pays, on choisit celui qui a la plus grande valeur. Une erreur termine la série.
 const JEUX={
-  altitude:{titre:"Le plus haut sommet",ico:"🏔️",q:"Quel pays a le point culminant le plus haut ?",data:ALTITUDE,fmt:v=>fr(v)+" m"},
-  bonheur:{titre:"Le plus heureux",ico:"😊",q:"Quel pays est le plus heureux ?",data:BONHEUR,fmt:v=>fr(v,2)+" / 10",
+  superficie:{titre:"Le plus grand",ico:"map",q:"Quel pays a la plus grande superficie ?",data:SUPERFICIE,fmt:v=>fr(v)+" km²",oldBest:"geo-best"},
+  altitude:{titre:"Le plus haut sommet",ico:"mountain",q:"Quel pays a le point culminant le plus haut ?",data:ALTITUDE,fmt:v=>fr(v)+" m"},
+  bonheur:{titre:"Le plus heureux",ico:"smile",q:"Quel pays est le plus heureux ?",data:BONHEUR,fmt:v=>fr(v,2)+" / 10",
     source:"World Happiness Report 2024, note sur 10"},
-  alcool:{titre:"Qui boit le plus ?",ico:"🍷",q:"Dans quel pays boit-on le plus d'alcool ?",data:ALCOOL,fmt:v=>fr(v,1)+" L / an",
+  alcool:{titre:"Qui boit le plus ?",ico:"wine",q:"Dans quel pays boit-on le plus d'alcool ?",data:ALCOOL,fmt:v=>fr(v,1)+" L / an",
     source:"OMS : litres d'alcool pur par habitant de 15 ans et plus et par an"},
 };
 const key=new URLSearchParams(location.search).get("jeu")||"altitude";
@@ -31,7 +33,7 @@ document.title=JEU.titre;
 const DATA=JEU.data.map(([code,name,v])=>({name,v,flag:flag(code)}));
 const app=document.getElementById("app");
 
-let best=0;try{best=+localStorage.getItem("solo-best-"+key)||0}catch(e){}
+let best=0;try{best=+localStorage.getItem("solo-best-"+key)||+(JEU.oldBest&&localStorage.getItem(JEU.oldBest))||0}catch(e){}
 let score=0,kept=null,pair=[],picked=null,lastScore=0;
 const rand=()=>DATA[Math.floor(Math.random()*DATA.length)];
 // Un autre pays, avec une valeur différente (sinon il n'y aurait pas de bonne réponse)
@@ -56,7 +58,7 @@ function answer(i){
 
 function render(){
   const good=pair[0].v>pair[1].v?0:1,done=picked!==null,won=done&&picked===good;
-  let h=`<a class="back" href="../">← Menu</a><h1>${JEU.ico} ${esc(JEU.titre)}</h1>
+  let h=`${backLink()}<h1>${icon(JEU.ico)}${esc(JEU.titre)}</h1>
     <div class="score"><div class="sc a"><div class="n">Série</div><div class="v">${score}</div></div>
     <div class="mid">Solo</div><div class="sc b"><div class="n">Record</div><div class="v">${best}</div></div></div>
     <h2 class="q">${esc(JEU.q)}</h2><div class="duel">`;
