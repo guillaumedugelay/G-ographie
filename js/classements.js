@@ -74,13 +74,13 @@ const PRESSE=[
 
 const fr=n=>n.toLocaleString("fr-FR");
 export const JEUX={
-  altitude:{titre:"Le plus haut sommet",ico:"🏔️",
+  altitude:{titre:"Le plus haut sommet",ico:"mountain",
     consigne:"Classe ces 10 pays du plus haut point culminant au plus bas.",haut:"Plus haut",bas:"Plus bas",
     data:ALTITUDE,minGap:40,fmt:v=>fr(v)+" m"},
-  corruption:{titre:"Le moins corrompu",ico:"⚖️",
+  corruption:{titre:"Le moins corrompu",ico:"scale",
     consigne:"Classe ces 10 pays du moins corrompu au plus corrompu (indice de perception de la corruption 2023, sur 100).",haut:"Moins corrompu",bas:"Plus corrompu",
     data:CORRUPTION,minGap:3,fmt:v=>v+" / 100"},
-  presse:{titre:"La presse la plus libre",ico:"📰",
+  presse:{titre:"La presse la plus libre",ico:"newspaper",
     consigne:"Classe ces 10 pays de la presse la plus libre à la moins libre (classement RSF 2024).",haut:"Plus libre",bas:"Moins libre",
     data:PRESSE.map(([c,n,r])=>[c,n,-r]),minGap:5,fmt:v=>"rang "+(-v)+" / 180"},
 };
